@@ -2,498 +2,224 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYS 薈藝博文升中資訊日 - 系統管理員平台</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-        body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; margin: 0; background-color: #f4f7f6; color: #333; }
-        .sidebar { width: 250px; background-color: #004080; color: white; position: fixed; height: 100vh; padding-top: 20px; box-sizing: border-box; z-index: 50;}
-        .sidebar-brand { text-align: center; padding: 0 15px; margin-bottom: 25px; }
-        .school-logo { width: 80px; height: 80px; border-radius: 50%; background-color: white; object-fit: contain; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin-bottom: 10px; }
-        .sidebar h2 { font-size: 14px; margin: 0; line-height: 1.4; }
-        .nav-btn { display: block; width: 100%; padding: 15px 20px; text-align: left; background: none; border: none; color: #ddd; font-size: 16px; cursor: pointer; transition: 0.3s; box-sizing: border-box; }
-        .nav-btn:hover, .nav-btn.active { background-color: #0059b3; color: white; border-left: 5px solid #ffcc00; }
-        .logout-btn { position: absolute; bottom: 20px; width: 100%; color: #ff6b6b; font-weight: bold; }
-        .main-content { margin-left: 250px; padding: 30px; box-sizing: border-box; }
-        .header-title { margin-top: 0; color: #004080; border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
-        .section { display: none; }
-        .section.active { display: block; }
-        .dashboard-cards { display: flex; gap: 20px; margin-bottom: 30px; }
-        .card { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; }
-        .card h3 { margin: 0 0 10px 0; color: #666; font-size: 16px; }
-        .card .number { font-size: 36px; font-weight: bold; color: #007bff; }
-        .chart-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 400px; }
-        .toolbar { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .search-box { flex: 1; max-width: 400px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
-        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; color: white; font-weight: bold; margin-left: 10px; transition: 0.2s; }
-        .btn-add { background-color: #007bff; }
-        .btn-export { background-color: #28a745; }
-        .table-container { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background-color: #f8f9fa; color: #555; font-weight: bold; }
-        tr:hover { background-color: #f1f7fd; }
-        .status { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-        .status.active { background-color: #d4edda; color: #155724; }
-        .status.pending { background-color: #fff3cd; color: #856404; }
-        .action-btn { background: none; border: none; cursor: pointer; color: #007bff; font-size: 14px; margin-right: 5px; }
-        .action-btn:hover { text-decoration: underline; }
-        .action-btn.delete { color: #dc3545; }
-        
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto; }
-        .modal-overlay.active { display: flex; }
-        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 100%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: max-width 0.3s; margin: 40px auto; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
-        .btn-cancel { background-color: #6c757d; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .csv-import-box { background: #f8f9fa; border: 2px dashed #004080; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
-        .csv-import-box input[type="file"] { display: none; }
-        .csv-label-btn { background-color: #004080; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; display: inline-block; font-size: 13px; font-weight: bold; margin: 10px 0; }
-        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .form-group { flex: 1; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; }
-        
-        .qr-category { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .qr-category h3 { color: #004080; border-bottom: 2px solid #ffcc00; display: inline-block; padding-bottom: 5px; margin-top: 0; }
-        .qr-grid { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px; }
-        .qr-card { text-align: center; border: 1px solid #eee; padding: 15px; border-radius: 8px; background: #f9f9f9; width: 140px; }
-        .qr-card canvas { background: white; padding: 5px; border: 1px solid #ddd; border-radius: 5px; }
-        .qr-card p { font-weight: bold; color: #555; margin: 10px 0; font-size: 16px; }
-        .download-btn { background-color: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; width: 100%; }
-        
-        .settings-card { background: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; max-width: 600px; }
-        .logo-preview-area { display: flex; align-items: center; gap: 20px; margin-top: 10px; }
-        .preview-img { width: 100px; height: 100px; border: 1px dashed #ccc; border-radius: 50%; object-fit: contain; padding: 5px; background: #fafafa; }
-        
-        /* 📜 證書預覽與 A4 排版樣式 */
-        .cert-render-area { background-color: #ffffff; padding: 30px; box-sizing: border-box; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; position: relative; }
-        .cert-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #004080; padding-bottom: 15px; }
-        .cert-logo { width: 70px; height: 70px; object-fit: contain; margin-bottom: 5px; }
-        .cert-header h1 { color: #004080; font-size: 20px; margin: 0; letter-spacing: 1px; }
-        .cert-header h2 { color: #333; font-size: 14px; margin: 5px 0 0 0; }
-        .cert-info { display: flex; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
-        .cert-info strong { color: #333; }
-        .cert-chart { position: relative; width: 100%; height: 300px; margin-bottom: 15px; }
-        .cert-ai { background: #ebf5ff; border-left: 4px solid #007bff; padding: 15px; border-radius: 5px; font-size: 13px; line-height: 1.5; }
-        
-        /* 🌟 A4 PDF 專屬高畫質排版 (導出時觸發) 🌟 */
-        .exporting-a4 {
-            width: 794px !important;
-            height: 1123px !important;
-            max-width: 794px !important;
-            padding: 50px 60px !important;
-            border-width: 10px !important;
-            outline-width: 3px !important;
-            outline-offset: -15px !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            background-color: white !important;
-            margin: 0 auto !important;
-        }
-        .exporting-a4 .cert-header { padding-bottom: 20px !important; margin-bottom: 20px !important; border-bottom-width: 3px !important; }
-        .exporting-a4 .cert-logo { width: 120px !important; height: 120px !important; margin-bottom: 15px !important;}
-        .exporting-a4 .school-title { font-size: 34px !important; margin-bottom: 10px !important; }
-        .exporting-a4 .cert-title { font-size: 22px !important; }
-        .exporting-a4 .cert-info { flex-direction: row !important; padding: 20px 30px !important; font-size: 18px !important; gap: 20px !important; margin-bottom: 30px !important;}
-        .exporting-a4 .cert-info p { font-size: 16px !important; margin: 8px 0 !important; }
-        .exporting-a4 .cert-info strong { font-size: 20px !important; }
-        .exporting-a4 .cert-chart { height: 450px !important; margin-bottom: 30px !important; }
-        .exporting-a4 .cert-ai { padding: 30px !important; border-left-width: 8px !important; margin-bottom: 20px !important;}
-        .exporting-a4 .cert-ai h4 { font-size: 22px !important; margin-bottom: 15px !important; }
-        .exporting-a4 .cert-ai p { font-size: 17px !important; line-height: 1.8 !important; margin: 10px 0 !important;}
-        .exporting-a4 .footer-text { font-size: 14px !important; margin-top: auto !important; }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>明愛元朗陳震夏中學薈藝博文升中資訊日 - 登入與註冊</title>
+    
+    <!-- 引入 Firebase v8 CDN (最穩定、不需編譯，相容各大手機) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 2000; align-items: center; justify-content: center; flex-direction: column; font-size: 20px; color: #004080; font-weight: bold; }
-        .prize-badge { background-color: #e3f2fd; color: #0d47a1; font-weight: bold; border-radius: 4px; padding: 2px 6px; font-size: 11px; display: inline-block; margin-top: 4px; }
+    <style>
+        body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .login-box, .register-box { background: white; padding: 35px 30px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        .register-box { display: none; }
+        h1 { font-size: 20px; color: #004080; margin-top: 0; margin-bottom: 20px; line-height: 1.4; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: bold; }
+        .input-group input, .input-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,123,255,0.2); }
+        button:hover { background-color: #0056b3; }
+        .switch-link { margin-top: 20px; font-size: 14px; color: #666; }
+        .switch-link a { color: #007bff; text-decoration: none; font-weight: bold; cursor: pointer; }
+        .error-msg { color: #dc3545; font-size: 13px; margin-bottom: 15px; display: none; font-weight: bold; background: #ffe6e6; padding: 10px; border-radius: 5px; }
+        .env-badge { font-size: 11px; color: #888; margin-top: 20px; border-top: 1px dashed #eee; padding-top: 15px; }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="sidebar-brand">
-            <img id="sidebarLogo" class="school-logo" src="https://via.placeholder.com/100?text=CYS+Logo">
-            <h2>明愛元朗陳震夏中學<br>薈藝博文升中資訊日</h2>
-        </div>
-        <button class="nav-btn active" onclick="showSection('dashboard')">📊 統計儀表板</button>
-        <button class="nav-btn" onclick="showSection('users')">👥 參與者管理</button>
-        <button class="nav-btn" onclick="showSection('qrcodes')">🖼️ 評分 QR Code</button>
-        <button class="nav-btn" onclick="showSection('settings')">⚙️ 系統設定</button>
-        <button class="nav-btn logout-btn" onclick="logout()">🚪 登出系統</button>
+
+<!-- ================= 登入區塊 ================= -->
+<div class="login-box" id="loginBox">
+    <h1>明愛元朗陳震夏中學<br>薈藝博文升中資訊日</h1>
+    <div id="loginError" class="error-msg">帳號或密碼錯誤</div>
+    
+    <div class="input-group">
+        <input type="text" id="loginUsername" placeholder="登記電子郵件 (或管理員帳號)">
     </div>
-
-    <div class="main-content">
-        <div id="dashboard" class="section active">
-            <h1 class="header-title">📊 薈藝博文升中資訊日即時統計</h1>
-            <div class="dashboard-cards">
-                <div class="card"><h3>總登記人數</h3><div class="number" id="statsTotal">0</div></div>
-                <div class="card"><h3>已報到 / 參與活動</h3><div class="number" id="statsActive" style="color: #28a745;">0</div></div>
-                <div class="card"><h3>整體出席率</h3><div class="number" id="statsRate" style="color: #ffc107;">0%</div></div>
-            </div>
-            <div class="chart-container"><canvas id="schoolChart"></canvas></div>
-        </div>
-
-        <div id="users" class="section">
-            <h1 class="header-title">👥 參與者管理與集點換獎查閱</h1>
-            <div class="toolbar">
-                <input type="text" id="searchInput" class="search-box" placeholder="🔍 搜尋姓名、學校、電郵或電話號碼..." onkeyup="filterUsers()">
-                <div>
-                    <button class="btn btn-add" onclick="openAddModal()">+ 新增與匯入</button>
-                    <button class="btn btn-export" onclick="exportToCSV()">📥 匯出資料 (含參與分數)</button>
-                    <button class="btn btn-export" style="background-color: #17a2b8;" onclick="batchExportAllPDFs()">🎓 匯出全部 A4 證書</button>
-                </div>
-            </div>
-            <div class="table-container">
-                <table>
-                    <thead><tr><th>姓名</th><th>就讀學校</th><th>年級</th><th>聯絡方式</th><th>參與狀態 (體驗攤位數 / 獎品)</th><th>操作</th></tr></thead>
-                    <tbody id="userTableBody"></tbody>
-                </table>
-            </div>
-        </div>
-        
-        <div id="qrcodes" class="section">
-            <h1 class="header-title">🖼️ 下載 1-5 分評估 QR Code</h1>
-            <p style="color: #666; margin-bottom: 20px;">請列印對應的 QR Code 放置於各教室。不同攤位若評核同一個能力且分數相同，影印同一個 QR Code 即可！系統具有「2 分鐘內不可重複掃描」防刷分安全機制。</p>
-            <div id="qr-container"></div>
-        </div>
-
-        <div id="settings" class="section">
-            <h1 class="header-title">⚙️ 系統設定</h1>
-            <div class="settings-card">
-                <h3>🏫 學校校徽設定</h3>
-                <div class="logo-preview-area">
-                    <img id="settingsLogoPreview" class="preview-img" src="https://via.placeholder.com/100?text=CYS+Logo">
-                    <div>
-                        <input type="file" id="logoUploadInput" accept="image/*" onchange="previewAndSaveLogo(this)">
-                        <p style="color: #999; font-size: 12px; margin: 5px 0 0 0;">支援 JPG、PNG 格式。</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="input-group">
+        <input type="password" id="loginPassword" placeholder="登記聯絡電話 (或管理員密碼)">
     </div>
+    
+    <button onclick="handleLogin()">安全登入</button>
+    <div class="switch-link">還沒有帳號？ <a onclick="toggleView('register')">立即自行註冊</a></div>
+    <div class="env-badge" id="envBadge" style="color: #28a745;">☁️ 系統已成功啟用 Firebase 即時雲端儲存</div>
+</div>
 
-    <div id="loadingOverlay"><div id="loadingText">正在生成證書 (1/10)...</div></div>
-
-    <!-- 證書預覽 Modal -->
-    <div id="certPreviewModal" class="modal-overlay">
-        <div class="modal-content" id="certModalContent" style="max-width: 600px; background: #eee;">
-            <h3 style="margin-top:0; border-bottom:1px solid #ccc; padding-bottom:10px;">🔍 證書預覽</h3>
-            <div id="certRenderArea" class="cert-render-area">
-                <div class="cert-header">
-                    <img id="certModalLogo" class="cert-logo" src="https://via.placeholder.com/150" crossorigin="anonymous">
-                    <h1>明愛元朗陳震夏中學</h1>
-                    <h2>🤖 薈藝博文升中資訊日 - 個人能力證書</h2>
-                </div>
-                <div class="cert-info">
-                    <div><p>姓名：<strong id="certName"></strong></p><p>學校：<strong id="certSchool"></strong></p></div>
-                    <div style="text-align: right;"><p>年級：<strong id="certGrade"></strong></p><p>日期：<strong id="certDate"></strong></p></div>
-                </div>
-                <div class="cert-chart"><canvas id="certRadarChart"></canvas></div>
-                <div class="cert-ai">
-                    <h4>✨ AI 智能綜合能力分析</h4>
-                    <p><span style="color:#28a745;font-weight:bold;">【優勢讚賞】</span> <span id="certAiPositive"></span></p>
-                    <p><span style="color:#d39e00;font-weight:bold;">【優化建議】</span> <span id="certAiSuggest"></span></p>
-                </div>
-                <div class="footer-text" style="text-align: right; color: #999; font-size: 10px; margin-top: 16px;">
-                    <p>此證書由 AI 系統根據各範疇之平均評估運算生成（底分為 3.0 分）。</p>
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeCertModal()">關閉預覽</button>
-                <button class="btn btn-export" style="background-color: #dc3545;" onclick="downloadSinglePDF()">📥 下載 A4 證書 PDF</button>
-            </div>
-        </div>
+<!-- ================= 註冊區塊 ================= -->
+<div class="register-box" id="registerBox">
+    <h1 style="margin-bottom: 15px;">📝 參與者自行註冊</h1>
+    <div id="regError" class="error-msg"></div>
+    
+    <div class="input-group">
+        <label>姓名 <span style="color:red">*</span></label>
+        <input type="text" id="regName" placeholder="例如：陳大文">
     </div>
-
-    <!-- 新增與匯入 Modal -->
-    <div id="addUserModal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>📝 新增參與者或大量匯入</h3>
-            <div class="csv-import-box">
-                <label for="csvFileInput" class="csv-label-btn">📂 選擇 CSV 檔案匯入</label>
-                <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(this)">
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>姓名</label><input type="text" id="addName"></div>
-                <div class="form-group"><label>學校</label><select id="addSchool" class="school-select-list"></select></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>年級</label><select id="addGrade"><option value="小六">小六</option><option value="小五">小五</option></select></div>
-                <div class="form-group"><label>狀態</label><select id="addStatus"><option value="active">已報到</option><option value="pending">未報到</option></select></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>電郵</label><input type="text" id="addEmail"></div>
-                <div class="form-group"><label>電話</label><input type="text" id="addPhone"></div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeAddModal()">取消</button>
-                <button class="btn btn-add" onclick="saveNewUser()">新增</button>
-            </div>
-        </div>
+    <div class="input-group">
+        <label>就讀小學 <span style="color:red">*</span></label>
+        <select id="regSchool" class="school-select-list"></select>
     </div>
+    <div class="input-group">
+        <label>就讀年級</label>
+        <select id="regGrade">
+            <option value="小六">小六</option>
+            <option value="小五">小五</option>
+            <option value="小四">小四</option>
+            <option value="小三">小三</option>
+            <option value="其他">其他</option>
+        </select>
+    </div>
+    <div class="input-group">
+        <label>電子郵件 (登入帳號) <span style="color:red">*</span></label>
+        <input type="email" id="regEmail" placeholder="example@email.com">
+    </div>
+    <div class="input-group">
+        <label>聯絡電話 (登入密碼) <span style="color:red">*</span></label>
+        <input type="tel" id="regPhone" placeholder="例如：91234567">
+    </div>
+    
+    <button style="background-color: #28a745;" id="regBtn" onclick="handleRegister()">確認註冊並自動登入</button>
+    <div class="switch-link">已經有帳號了？ <a onclick="toggleView('login')">返回登入</a></div>
+</div>
 
-    <script>
-        const abilities = ['溝通應對', '探究解難', '邏輯思維', '突破創意', '科技應用'];
-        let previewChartInstance = null;
+<script>
+    // 🌟 帶入您的專屬 Firebase 金鑰設定 🌟
+    const firebaseConfig = {
+        apiKey: "AIzaSyDyfe-ItBWTeJ_6aZWjz4D8FQwWJ8XnLw4",
+        authDomain: "cys-openday.firebaseapp.com",
+        projectId: "cys-openday",
+        storageBucket: "cys-openday.firebasestorage.app",
+        messagingSenderId: "332588640232",
+        appId: "1:332588640232:web:c17dd8d7d443d2d825265d"
+    };
 
-        // 底分 3.0 分之平均分計算邏輯
-        function getAverageScores(scoresArrayOfArrays) {
-            return scoresArrayOfArrays.map(arr => {
-                if (!Array.isArray(arr) || arr.length === 0) return 3.0;
-                const sum = arr.reduce((a, b) => a + b, 0) + 3.0; 
-                return parseFloat((sum / (arr.length + 1)).toFixed(1)); 
+    // 初始化 Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const districtsSchools = {
+        "元朗區": ["光明學校", "鐘聲學校", "元朗公立中學校友會小學", "南元朗官立小學", "光明英來學校", "元朗商會小學"],
+        "天水圍區": ["樂善堂梁銶琚學校", "伊利沙伯中學舊生會小學", "天水圍官立小學", "東華三院潮陽百欣小學"],
+        "屯門區": ["保良局志豪小學", "順德聯誼總會何日東小學", "順德聯誼總會胡少渠紀念小學"],
+        "其他地區 / 其他學校": ["其他小學"]
+    };
+
+    window.onload = function() {
+        const select = document.getElementById('regSchool');
+        select.innerHTML = '<option value="">-- 請選擇就讀小學 --</option>';
+        for (const [district, schools] of Object.entries(districtsSchools)) {
+            const group = document.createElement('optgroup'); group.label = district;
+            schools.forEach(school => {
+                const opt = document.createElement('option'); opt.value = school; opt.textContent = school;
+                group.appendChild(opt);
             });
+            select.appendChild(group);
+        }
+    };
+
+    function toggleView(view) {
+        document.getElementById('loginError').style.display = 'none';
+        document.getElementById('regError').style.display = 'none';
+        if (view === 'register') {
+            document.getElementById('loginBox').style.display = 'none';
+            document.getElementById('registerBox').style.display = 'block';
+        } else {
+            document.getElementById('registerBox').style.display = 'none';
+            document.getElementById('loginBox').style.display = 'block';
+        }
+    }
+
+    // 1. 雲端登入配對
+    async function handleLogin() {
+        const emailInput = document.getElementById('loginUsername').value.trim();
+        const phoneInput = document.getElementById('loginPassword').value.trim();
+        const errorDiv = document.getElementById('loginError');
+        errorDiv.style.display = 'none';
+
+        if (!emailInput || !phoneInput) {
+            errorDiv.innerText = '請輸入電子郵件與電話號碼'; errorDiv.style.display = 'block'; return;
         }
 
-        // 總體驗次數除以 2 為體驗之攤位數
-        function getParticipationScore(scoresArrayOfArrays) {
-            const totalScans = scoresArrayOfArrays.reduce((total, arr) => total + (Array.isArray(arr) ? arr.length : 0), 0);
-            return Math.floor(totalScans / 2);
+        // 管理員帳密驗證
+        if (emailInput.toUpperCase() === "CYS" && phoneInput === "cys24755432") {
+            sessionStorage.setItem('admin_token', 'secure_session_active');
+            localStorage.setItem('admin_token_backup', 'secure_session_active');
+            window.location.href = 'admin.html';
+            return;
         }
 
-        function getPrizeLevel(points) {
-            if (points >= 10) return "🏆 大獎";
-            if (points >= 8) return "🥈 中獎";
-            if (points >= 5) return "🥉 細獎";
-            return "❌ 無獎品";
-        }
-
-        const districtsSchools = {
-            "元朗區": ["光明學校", "鐘聲學校", "元朗公立中學校友會小學", "南元朗官立小學"],
-            "天水圍區": ["樂善堂梁銶琚學校", "伊利沙伯中學舊生會小學", "天水圍官立小學"],
-            "其他地區 / 其他學校": ["其他小學"]
-        };
-
-        function populateSchoolDropdowns() {
-            const dropdowns = document.querySelectorAll('.school-select-list');
-            dropdowns.forEach(select => {
-                select.innerHTML = '<option value="">-- 請選擇小學 --</option>';
-                for (const [district, schools] of Object.entries(districtsSchools)) {
-                    const group = document.createElement('optgroup'); group.label = district;
-                    schools.forEach(s => { const opt = document.createElement('option'); opt.value = s; opt.textContent = s; group.appendChild(opt); });
-                    select.appendChild(group);
+        // 從 Firebase 搜尋對應的使用者文件
+        db.collection("users").doc(emailInput.toLowerCase()).get().then((doc) => {
+            if (doc.exists) {
+                const userData = doc.data();
+                if (String(userData.phone).trim() === phoneInput) {
+                    // 登入成功，將憑證寫入會話
+                    sessionStorage.setItem('user_email', userData.email);
+                    sessionStorage.setItem('user_phone', userData.phone);
+                    window.location.href = 'user.html';
+                } else {
+                    errorDiv.innerText = '電話號碼不正確！'; errorDiv.style.display = 'block';
                 }
-            });
-        }
-
-        const defaultUsers = [
-            { id: 1, name: "陳大文", school: "光明學校", grade: "小六", email: "chan@example.com", phone: "91234567", status: "active", scores: [[4,5], [3], [4,4], [5], [3,5]] },
-            { id: 2, name: "李小明", school: "鐘聲學校", grade: "小五", email: "lee@example.com", phone: "61234567", status: "active", scores: [[4,5], [5,5], [4,4], [3,5], [3,5]] },
-            { id: 3, name: "張美玲", school: "南元朗官立小學", grade: "小六", email: "cheung@example.com", phone: "51234567", status: "pending", scores: [[], [], [], [], []] }
-        ];
-
-        let mockUsers = defaultUsers;
-
-        function loadDatabase() {
-            const storedDb = localStorage.getItem('cys_users_database');
-            if (storedDb) { 
-                let parsed = JSON.parse(storedDb);
-                parsed.forEach(u => {
-                    if(u.scores && typeof u.scores[0] === 'number') {
-                        u.scores = u.scores.map(num => num > 0 ? [num] : []);
-                    }
-                });
-                mockUsers = parsed; 
-            } else { 
-                localStorage.setItem('cys_users_database', JSON.stringify(defaultUsers)); 
-            }
-        }
-        function saveDatabase() { localStorage.setItem('cys_users_database', JSON.stringify(mockUsers)); updateDashboardStats(); }
-
-        window.onload = function() {
-            populateSchoolDropdowns(); loadDatabase();
-            const savedLogo = localStorage.getItem('school_logo');
-            if (savedLogo) { document.getElementById('sidebarLogo').src = savedLogo; document.getElementById('settingsLogoPreview').src = savedLogo; document.getElementById('certModalLogo').src = savedLogo; }
-            document.getElementById('certDate').innerText = new Date().toLocaleDateString('zh-HK');
-            updateDashboardStats(); renderTable(mockUsers);
-        };
-
-        function updateDashboardStats() {
-            const total = mockUsers.length; const active = mockUsers.filter(u => u.status === 'active').length;
-            document.getElementById('statsTotal').innerText = total; document.getElementById('statsActive').innerText = active;
-            document.getElementById('statsRate').innerText = total > 0 ? ((active / total) * 100).toFixed(1) + '%' : '0%';
-        }
-
-        function renderTable(data) {
-            const tbody = document.getElementById('userTableBody'); tbody.innerHTML = '';
-            if(data.length === 0) return;
-            data.forEach(user => {
-                const pScore = getParticipationScore(user.scores || [[],[],[],[],[]]);
-                const prize = getPrizeLevel(pScore);
-                const statusBadge = user.status === 'active' ? 
-                    `<span class="status active">已報到</span><br><span class="prize-badge">集點：${pScore}攤 (${prize})</span>` : 
-                    `<span class="status pending">未報到</span>`;
-                
-                tbody.innerHTML += `<tr>
-                        <td><strong>${user.name}</strong></td><td>${user.school}</td><td>${user.grade}</td>
-                        <td>${user.email}<br><small style="color:#888;">${user.phone}</small></td><td>${statusBadge}</td>
-                        <td>
-                            <button class="action-btn" onclick="previewCert(${user.id})">👀 預覽證書</button>
-                            <button class="action-btn" onclick="simulateScoreScan('${user.name}', ${user.id})">⚡ 模擬評分</button>
-                            <button class="action-btn delete" onclick="deleteUser(${user.id}, '${user.name}')">刪除</button>
-                        </td></tr>`;
-            });
-        }
-        function filterUsers() {
-            const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-            renderTable(mockUsers.filter(user => (user.name.toLowerCase().includes(keyword) || user.school.toLowerCase().includes(keyword) || user.email.toLowerCase().includes(keyword) || user.phone.toLowerCase().includes(keyword))));
-        }
-        function deleteUser(id, name) { if(confirm(`確定刪除「${name}」？`)) { mockUsers = mockUsers.filter(u => u.id !== id); saveDatabase(); filterUsers(); } }
-
-        function openAddModal() { document.getElementById('addUserModal').classList.add('active'); }
-        function closeAddModal() { document.getElementById('addUserModal').classList.remove('active'); }
-        function saveNewUser() {
-            const name = document.getElementById('addName').value.trim(); const school = document.getElementById('addSchool').value;
-            if (!name || !school) { alert("必填欄位不可為空！"); return; }
-            mockUsers.unshift({ id: Date.now(), name, school, grade: document.getElementById('addGrade').value, email: document.getElementById('addEmail').value.trim() || '未填寫', phone: document.getElementById('addPhone').value.trim() || '未填寫', status: document.getElementById('addStatus').value, scores: [[], [], [], [], []] });
-            saveDatabase(); filterUsers(); closeAddModal(); alert(`✅ 新增成功`);
-        }
-
-        function exportToCSV() {
-            if (mockUsers.length === 0) return;
-            let csvContent = "\ufeff姓名,就讀學校,年級,電子郵件,聯絡電話,參與狀態,體驗攤位數,符合獎品,溝通應對(平均),探究解難(平均),邏輯思維(平均),突破創意(平均),科技應用(平均)\n";
-            mockUsers.forEach(user => {
-                const s = user.scores || [[], [], [], [], []];
-                const avg = getAverageScores(s);
-                const pScore = getParticipationScore(s);
-                const prize = getPrizeLevel(pScore);
-                csvContent += `"${user.name}","${user.school}","${user.grade}","${user.email}","${user.phone}","${user.status === 'active' ? '已報到' : '未報到'}",${pScore},"${prize}",${avg[0]},${avg[1]},${avg[2]},${avg[3]},${avg[4]}\n`;
-            });
-            const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
-            link.download = `CYS_升中資訊日名單_${new Date().toISOString().slice(0, 10)}.csv`; link.click();
-        }
-
-        function simulateScoreScan(studentName, userId) {
-            const user = mockUsers.find(u => u.id === userId); if(!user) return;
-            const scoreInputs = prompt(`請輸入要新增的一筆評分分數 (格式：能力索引0-4,1-5分。例如：4,5 代表「科技應用」得5分)：`);
-            if (scoreInputs) {
-                const parts = scoreInputs.split(',').map(num => parseInt(num.trim()));
-                if (parts.length === 2 && parts[0] >= 0 && parts[0] <= 4 && parts[1] >= 1 && parts[1] <= 5) {
-                    user.scores[parts[0]].push(parts[1]);
-                    user.status = 'active'; 
-                    localStorage.setItem(`scores_${user.email}_${user.phone}`, JSON.stringify(user.scores));
-                    saveDatabase(); filterUsers(); alert("✅ 模擬加分成功！");
-                } else { alert("格式錯誤！正確格式例如：0,5"); }
-            }
-        }
-
-        function setupCertificateDOM(user) {
-            document.getElementById('certName').innerText = user.name; document.getElementById('certSchool').innerText = user.school; document.getElementById('certGrade').innerText = user.grade;
-            
-            const rawScores = JSON.parse(localStorage.getItem(`scores_${user.email}_${user.phone}`)) || user.scores || [[],[],[],[],[]];
-            const avgScores = getAverageScores(rawScores);
-            
-            const ctx = document.getElementById('certRadarChart').getContext('2d');
-            if (previewChartInstance) previewChartInstance.destroy();
-            previewChartInstance = new Chart(ctx, {
-                type: 'radar',
-                data: { labels: abilities, datasets: [{ label: '平均分數', data: avgScores, backgroundColor: 'rgba(54, 162, 235, 0.25)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 2 }] },
-                options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { r: { min: 0, max: 5, ticks: { display: false } } }, plugins: { legend: { display: false } } }
-            });
-
-            const totalScore = avgScores.reduce((a, b) => a + b, 0);
-            if (totalScore === 15.0) { 
-                document.getElementById('certAiPositive').innerText = "參與升中資訊日活動以解鎖你的能力雷達圖與優勢分析！"; 
-                document.getElementById('certAiSuggest').innerText = "等待體驗數據中...";
             } else {
-                const bestAbility = abilities[avgScores.indexOf(Math.max(...avgScores))];
-                document.getElementById('certAiPositive').innerText = `在「${bestAbility}」展現極佳素質！`;
-                document.getElementById('certAiSuggest').innerText = `持續多元挑戰，讓能力更全面。`;
+                errorDiv.innerText = '找不到此登記電郵，請先點擊下方自行註冊！'; errorDiv.style.display = 'block';
             }
+        }).catch((error) => {
+            console.error("Firebase 讀取錯誤:", error);
+            errorDiv.innerText = '連線雲端資料庫超時，請檢查網絡連線。'; errorDiv.style.display = 'block';
+        });
+    }
+
+    // 2. 雲端註冊
+    function handleRegister() {
+        const name = document.getElementById('regName').value.trim();
+        const school = document.getElementById('regSchool').value;
+        const grade = document.getElementById('regGrade').value;
+        const email = document.getElementById('regEmail').value.trim().toLowerCase();
+        const phone = document.getElementById('regPhone').value.trim();
+        const errorDiv = document.getElementById('regError');
+        const regBtn = document.getElementById('regBtn');
+        
+        errorDiv.style.display = 'none';
+
+        if (!name || !school || !email || !phone) {
+            errorDiv.innerText = '請填寫所有必填欄位！'; errorDiv.style.display = 'block'; return;
         }
 
-        let currentPreviewUser = null;
-        function previewCert(userId) {
-            currentPreviewUser = mockUsers.find(u => u.id === userId);
-            if(currentPreviewUser) { setupCertificateDOM(currentPreviewUser); document.getElementById('certPreviewModal').classList.add('active'); }
-        }
-        function closeCertModal() { document.getElementById('certPreviewModal').classList.remove('active'); }
+        regBtn.disabled = true;
+        regBtn.innerText = "正在連線雲端儲存中...";
 
-        // 🌟 核心：生成完美 A4 尺寸的 PDF 🌟
-        async function getA4Canvas(certArea) {
-            const modalContent = document.getElementById('certModalContent');
-            const origMaxWidth = modalContent.style.maxWidth;
-            modalContent.style.maxWidth = '900px'; // 讓容器有足夠空間展開 A4 尺寸
-            
-            certArea.classList.add('exporting-a4');
-            previewChartInstance.resize();
-            await new Promise(r => setTimeout(r, 400)); // 等待圖表重繪
-            
-            const canvas = await html2canvas(certArea, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-            
-            certArea.classList.remove('exporting-a4');
-            modalContent.style.maxWidth = origMaxWidth;
-            previewChartInstance.resize();
-            return canvas;
-        }
+        // 檢查該 Email 是否已被註冊
+        db.collection("users").doc(email).get().then((doc) => {
+            if (doc.exists) {
+                errorDiv.innerText = '此電子郵件已被註冊過！請直接返回登入。';
+                errorDiv.style.display = 'block';
+                regBtn.disabled = false;
+                regBtn.innerText = "確認註冊並自動登入";
+            } else {
+                // 建構正確的新手資料結構 (scores 為空陣列)
+                const newUser = {
+                    id: Date.now(),
+                    name: name,
+                    school: school,
+                    grade: grade,
+                    email: email,
+                    phone: phone,
+                    status: 'pending',
+                    scores: [[],[],[],[],[]]
+                };
 
-        async function downloadSinglePDF() {
-            if(!currentPreviewUser) return;
-            const certArea = document.getElementById('certRenderArea');
-            const btn = document.querySelector('#certPreviewModal .btn-export');
-            btn.disabled = true; btn.innerText = '⏳ 生成 A4 中...';
-            
-            try {
-                const canvas = await getA4Canvas(certArea);
-                const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297); // 滿版 A4 比例
-                pdf.save(`CYS_升中資訊日證書_${currentPreviewUser.name}.pdf`);
-            } catch(e) { console.error(e); alert("生成失敗"); } finally { btn.disabled = false; btn.innerText = '📥 下載 A4 證書 PDF'; }
-        }
-
-        async function batchExportAllPDFs() {
-            if (mockUsers.length === 0) return; if (!confirm(`將生成 ${mockUsers.length} 頁的 A4 PDF。`)) return;
-            const overlay = document.getElementById('loadingOverlay'); overlay.style.display = 'flex';
-            const modal = document.getElementById('certPreviewModal'); modal.classList.add('active'); modal.style.zIndex = "100";
-            
-            try {
-                const pdf = new jspdf.jsPDF('p', 'mm', 'a4'); 
-                for (let i = 0; i < mockUsers.length; i++) {
-                    document.getElementById('loadingText').innerText = `正在生成證書 (${i+1}/${mockUsers.length})...`;
-                    setupCertificateDOM(mockUsers[i]); 
-                    const canvas = await getA4Canvas(document.getElementById('certRenderArea'));
-                    if (i > 0) pdf.addPage();
-                    pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297); // 滿版 A4 比例
-                }
-                pdf.save(`CYS_全體證書_薈藝博文_${new Date().toISOString().slice(0, 10)}.pdf`);
-            } catch (err) { console.error(err); } finally { overlay.style.display = 'none'; modal.style.zIndex = "1000"; closeCertModal(); }
-        }
-
-        function showSection(sectionId) { document.querySelectorAll('.section').forEach(el => el.classList.remove('active')); document.getElementById(sectionId).classList.add('active'); }
-        function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
-
-        new Chart(document.getElementById('schoolChart').getContext('2d'), { type: 'bar', data: { labels: ['元朗公立中學校友會小學', '光明學校', '鐘聲學校', '南元朗官立小學', '其他'], datasets: [{ label: '人數', data: [150, 120, 95, 80, 411], backgroundColor: 'rgba(54, 162, 235, 0.6)' }] }, options: { responsive: true, maintainAspectRatio: false } });
-
-        // 🌟 數字代碼安全版：傳輸 index (0-4)
-        const qrContainer = document.getElementById('qr-container');
-        abilities.forEach((ability, index) => {
-            const catDiv = document.createElement('div'); catDiv.className = 'qr-category';
-            catDiv.innerHTML = `<h3>🎯 ${ability}</h3><div class="qr-grid" id="qr-grid-${index}"></div>`;
-            qrContainer.appendChild(catDiv);
-            
-            for (let s = 1; s <= 5; s++) {
-                const card = document.createElement('div'); card.className = 'qr-card';
-                const cId = `qr-canvas-${index}-${s}`;
-                card.innerHTML = `<canvas id="${cId}"></canvas><p>${s} 分</p><button class="download-btn" onclick="downloadQR('${cId}', '${ability}_${s}分')">⬇️ 下載圖檔</button>`;
-                document.getElementById(`qr-grid-${index}`).appendChild(card);
-                
-                const qrData = JSON.stringify({ ability: index, score: s, token: "CYS-SECURE-KEY" });
-                new QRious({ element: document.getElementById(cId), value: qrData, size: 120, level: 'H' });
+                // 寫入 Firebase Cloud Firestore
+                db.collection("users").doc(email).set(newUser).then(() => {
+                    alert(`🎉 註冊成功，歡迎參與資訊日！`);
+                    sessionStorage.setItem('user_email', email);
+                    sessionStorage.setItem('user_phone', phone);
+                    window.location.href = 'user.html';
+                }).catch((err) => {
+                    alert("註冊寫入雲端失敗，請聯絡接待處工作人員。");
+                    regBtn.disabled = false;
+                    regBtn.innerText = "確認註冊並自動登入";
+                });
             }
         });
-        function downloadQR(cId, fn) { const a = document.createElement('a'); a.href = document.getElementById(cId).toDataURL("image/png"); a.download = `CYS_QR_${fn}.png`; a.click(); }
-        
-        function previewAndSaveLogo(input) {
-            if (input.files[0]) {
-                const reader = new FileReader(); reader.onload = e => { 
-                    const b64 = e.target.result; document.getElementById('sidebarLogo').src = b64; document.getElementById('settingsLogoPreview').src = b64; document.getElementById('certModalLogo').src = b64;
-                    localStorage.setItem('school_logo', b64); alert('校徽上載成功！'); 
-                }; reader.readAsDataURL(input.files[0]);
-            }
-        }
-    </script>
+    }
+</script>
 </body>
 </html>
