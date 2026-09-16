@@ -71,7 +71,7 @@
         
         .btn-group { display: flex; gap: 12px; width: 100%; max-width: 600px; margin-top: 16px; }
         .btn { flex: 1; padding: 12px 8px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; }
-        .btn:hover { transform: translateY(-1px); }
+        .btn:hover { transform: translateY(-2px); }
         .btn-edit { background-color: #6c757d; }
         .btn-export { background-color: #dc3545; }
         
@@ -117,7 +117,7 @@
         .exporting-a4 .ai-comments { padding: 30px !important; border-left-width: 8px !important; margin-bottom: 20px !important;}
         .exporting-a4 .ai-comments h4 { font-size: 22px !important; margin-bottom: 15px !important; }
         .exporting-a4 .ai-comments p { font-size: 17px !important; line-height: 1.8 !important; margin: 10px 0 !important;}
-        .exporting-a4 .footer-text { font-size: 14px !important; margin-top: auto !important; }
+        .exporting-a4 .footer-text { font-size: 13px !important; line-height: 1.5 !important; margin-top: auto !important; }
     </style>
 </head>
 <body>
@@ -158,8 +158,7 @@
 <!-- 📜 個人能力證書本體 -->
 <div class="certificate-container" id="certificate-area">
     <div class="cert-header">
-        <!-- 🌟 修正版：新增安全降級載入與 CORS 防禦設定的校徽 IMG 🌟 -->
-        <img id="certLogo" class="cert-logo" src="https://via.placeholder.com/150?text=CYS+Logo" alt="School Logo" crossorigin="anonymous">
+        <img id="certLogo" class="school-logo" src="https://www.cys.edu.hk/img/logo.png" alt="School Logo" crossorigin="anonymous">
         <h1 class="school-title">明愛元朗陳震夏中學</h1>
         <h2 class="cert-title">🤖 薈藝博文升中資訊日 - 個人能力證書</h2>
     </div>
@@ -176,7 +175,7 @@
         </div>
     </div>
 
-    <!-- 蜘蛛雷達圖 -->
+    <!-- 蜘蛛雷達圖 (展示5科能力平均分) -->
     <div class="chart-container"><canvas id="radarChart"></canvas></div>
 
     <!-- AI 智能評語 -->
@@ -186,16 +185,17 @@
         <p><span class="highlight-suggest">【優化建議】</span> <span id="ai-suggest">系統分析中...</span></p>
     </div>
     
-    <div class="footer-text" style="text-align: right; color: #999; font-size: 10px; margin-top: 16px;">
-        <p>此證書由明愛元朗陳震夏中學 AI 能力評估系統根據學生各能力範疇運算生成。</p>
-        <p>本系統由明愛元朗陳震夏中學副校長張耀宗博士設計，版權均為學校所有。</p>
+    <!-- 🌟 修正：底端文字與設計版權聲明區塊 🌟 -->
+    <div class="footer-text" style="text-align: right; color: #555; font-size: 11px; margin-top: 18px; border-top: 1px solid #eef2f5; padding-top: 12px; font-weight: bold; line-height: 1.6;">
+        <p>此證書由明愛元朗陳震夏中學 AI 能力評估系統運算生成。</p>
+        <p style="color: #004080; margin-top: 4px;">本系統由副校長張耀宗博士設計，版權均為學校所有。</p>
     </div>
 </div>
 
 <!-- 底部控制按鈕 -->
 <div class="btn-group" data-html2canvas-ignore="true">
     <button class="btn btn-edit" onclick="logout()">登出 / 返回首頁</button>
-    <button id="exportBtn" class="btn btn-export" onclick="exportPDF()">📥 下載 A4 證書 PDF</button>
+    <button id="exportBtn" class="btn btn-export" onclick="exportPDF()">📥 下載 PDF 證書</button>
 </div>
 
 <!-- 📷 懸浮掃碼按鈕 -->
@@ -203,6 +203,7 @@
     <span>📷</span>掃描獲分
 </button>
 
+<!-- 掃描二維碼彈出視窗 -->
 <div id="scanModal" class="modal-overlay">
     <div class="modal-content">
         <h3>📷 掃描攤位二維碼</h3>
@@ -239,7 +240,7 @@
         }
     }
 
-    // 平均分數計算
+    // 處理 Map/Object 結構的平均分計算
     function getAverageScores(scoresObj) {
         return [0, 1, 2, 3, 4].map(i => {
             const arr = scoresObj[String(i)] || [];
@@ -249,7 +250,7 @@
         });
     }
 
-    // 總體驗次數
+    // 處理 Map/Object 結構的遊玩分數計算 (掃描次數 / 2)
     function getParticipationScore(scoresObj) {
         let totalScans = 0;
         for (let i = 0; i < 5; i++) {
@@ -264,22 +265,6 @@
     if (!loginEmail || !loginPhone) { alert("請先登入系統！"); window.location.href = 'index.html'; }
 
     let currentUser = null;
-
-    // 🌟 修正版：完美相容 Base64 共享安全載入機制 🌟
-    function loadLogoSafe() {
-        try {
-            const savedLogo = localStorage.getItem('school_logo');
-            if (savedLogo && savedLogo.startsWith('data:image')) {
-                // 確保校徽大字串載入無損
-                document.getElementById('certLogo').src = savedLogo;
-            } else {
-                // 若為空或沙盒拒絕，自動降級為高畫質官方預設 CYS 佔位圖，防止破圖
-                document.getElementById('certLogo').src = "https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/firebase_28dp.png";
-            }
-        } catch(e) {
-            console.warn("校徽本機載入受限：", e);
-        }
-    }
 
     function loadUserCloudData() {
         db.collection("users").doc(loginEmail.toLowerCase()).get().then((doc) => {
@@ -308,7 +293,6 @@
     }
 
     document.getElementById('currentDate').innerText = new Date().toLocaleDateString('zh-HK');
-    loadLogoSafe(); // 調用安全校徽載入
 
     const ctx = document.getElementById('radarChart').getContext('2d');
     const isMobile = window.innerWidth < 480;
@@ -334,7 +318,7 @@
 
     loadUserCloudData();
 
-    // 監聽雲端
+    // 監聽雲端資料庫
     db.collection("users").doc(loginEmail.toLowerCase()).onSnapshot((doc) => {
         if (doc.exists) {
             currentUser = doc.data();
@@ -386,6 +370,7 @@
         document.getElementById('progressBar').style.width = progressPercent + "%";
     }
 
+    // AI 評語
     function generateAIComments(calculatedAvgs) {
         const totalScore = calculatedAvgs.reduce((a, b) => a + b, 0);
         
@@ -560,6 +545,7 @@
 
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
+    // A4 滿邊距完美匯出
     async function exportPDF() {
         const btn = document.getElementById('exportBtn');
         const certArea = document.getElementById('certificate-area');
