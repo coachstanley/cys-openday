@@ -546,14 +546,32 @@
         else { document.getElementById('scanModal').classList.remove('active'); }
     }
 
+       // =======================================================
+    // 🛡️ 升級安全相容版：二維碼掃描與防作弊驗證 
+    // =======================================================
     function onScanSuccess(decodedText, decodedResult) {
         try {
-            const scanData = JSON.parse(decodedText);
+            // 嘗試解析 JSON 格式
+            let scanData;
+            try {
+                scanData = JSON.parse(decodedText);
+            } catch(jsonErr) {
+                // 防呆：如果掃描到的是純文字（非JSON），例如 "溝通應對_5"
+                if (decodedText.includes('_')) {
+                    const parts = decodedText.split('_');
+                    scanData = { ability: parts[0], score: parseInt(parts[1]), token: "CYS-SECURE-KEY" };
+                } else {
+                    throw new Error("格式非JSON");
+                }
+            }
+
             const abilityName = scanData.ability;
             const newScore = parseInt(scanData.score); 
             
+            // 驗證能力名稱與分數範圍
             if (!abilities.includes(abilityName) || isNaN(newScore) || newScore < 1 || newScore > 5) {
-                alert("⚠️ 無效的評估二維碼！"); return;
+                alert(`⚠️ 掃描失敗：這不是我們升中資訊日的評分 QR Code！\n\n【二維碼內容】：${decodedText}`); 
+                return;
             }
 
             stopScanner();
@@ -561,26 +579,26 @@
             let localRawScores = JSON.parse(localStorage.getItem(userScoreKey)) || rawScores;
             const abilityIndex = abilities.indexOf(abilityName);
 
-            // 🛡️ 防作弊檢查
+            // 🛡️ 防作弊檢查：限制學生掃描同一個能力的分數
             if (localRawScores[abilityIndex].includes(newScore)) {
-                alert(`⚠️ 防作弊提示：你已經掃描過「${abilityName}」的 ${newScore} 分印章了！\n\n請前往其他教室挑戰，或在同一個攤位爭取不同的評分成績吧！`);
+                alert(`⚠️ 防作弊提示：你已經收集過「${abilityName}」的 ${newScore} 分印章了！\n\n請前往其他教室挑戰，或在同一個攤位爭取不同的評分成績吧！🚀`);
                 return;
             }
 
-            // 成功加分
+            // 成功加分（雙軌機制）
             localRawScores[abilityIndex].push(newScore);
             localStorage.setItem(userScoreKey, JSON.stringify(localRawScores));
             
-            // 重算並更新雷達圖
+            // 重算並更新雷達圖與 AI 評語
             const updatedAvgs = getAverageScores(localRawScores);
             radarChart.data.datasets[0].data = updatedAvgs;
             radarChart.update();
             generateAIComments(updatedAvgs);
 
-            // 更新體驗攤位次數 (除以2)
+            // 更新體驗攤位次數
             updatePrizeSystem(localRawScores);
 
-            // 同步至全網資料庫供 Admin 讀取
+            // 同步至系統全域資料庫
             currentUser.scores = localRawScores;
             currentUser.status = 'active'; 
             const userIdx = mockUsers.findIndex(u => u.id === currentUser.id);
@@ -594,12 +612,14 @@
             setTimeout(() => { box.classList.remove('updated-flash'); }, 3000);
 
             const currentBoothCount = getParticipationScore(localRawScores);
-            alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得一筆 ${newScore} 分評分，已更新蜘蛛圖！\n2. 【遊玩集點】目前累計體驗完成：${currentBoothCount} 個攤位。`);
+            alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得 ${newScore} 分，蜘蛛圖已更新！\n2. 【遊玩集點】目前累計體驗完成：${currentBoothCount} 個攤位。`);
             
         } catch (e) {
-            alert("⚠️ 二維碼解析失敗！這不是有效的評分二維碼。");
+            // 終極防呆彈窗，直接顯示掃描到的內容
+            alert(`⚠️ 二維碼解析失敗！\n\n【您掃描到的文字】：\n"${decodedText}"\n\n【正確格式應為】：\n{"ability":"溝通應對","score":5}`);
         }
     }
+
     function onScanFailure(error) {}
 
     // 監聽螢幕旋轉或大小調整，即時優化 RWD 圖表
