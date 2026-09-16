@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>我的 AI 能力證書 - 明愛元朗陳震夏中學</title>
     <!-- 引入必要的套件 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -10,61 +10,187 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #e9ecef; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; padding-bottom: 90px; }
-        .certificate-container { background-color: #ffffff; width: 100%; max-width: 600px; padding: 40px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 10px; position: relative; border: 8px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -10px; }
-        .cert-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #004080; padding-bottom: 15px; }
-        .cert-logo { width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px; }
-        .school-title { color: #004080; font-size: 20px; font-weight: bold; margin: 0; letter-spacing: 1px; }
-        .cert-title { color: #333; font-size: 15px; margin: 5px 0 0 0; font-weight: bold; }
+        /* 🌟 RWD 基礎重設 🌟 */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         
-        .student-info { display: flex; justify-content: space-between; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 16px; }
-        .student-info p { margin: 5px 0; color: #555; font-size: 14px; }
-        .student-info strong { color: #333; font-size: 16px; }
+        body { 
+            font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; 
+            background-color: #e9ecef; 
+            padding: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh;
+            padding-bottom: 100px; /* 為懸浮按鈕預留空間 */
+        }
+
+        /* 📍 展覽活動地圖導覽面版 - RWD 自動縮放 */
+        .info-panel { 
+            background-color: #fff; 
+            width: 100%; 
+            max-width: 600px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            margin-bottom: 16px; 
+            overflow: hidden; 
+            border: 1px solid #ddd; 
+        }
+        .info-header { 
+            background-color: #004080; 
+            color: white; 
+            padding: 14px 16px; 
+            font-weight: bold; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            cursor: pointer; 
+            user-select: none;
+            font-size: 15px;
+        }
+        .info-content { padding: 12px; display: none; background-color: #fafbfc; }
+        .info-content.active { display: block; }
         
-        .chart-container { position: relative; width: 100%; height: 350px; margin-bottom: 20px; }
+        /* 響應式表格：在小螢幕上自動調整間距 */
+        .schedule-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .schedule-table th, .schedule-table td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #eef2f5; }
+        .schedule-table th { background-color: #f1f5f9; color: #475569; font-weight: bold; }
+        .floor-badge { background-color: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; }
+        .highlight-event { color: #004080; font-weight: bold; }
         
-        /* 🎁 遊戲化集點獎品面板 */
-        .prize-panel { background-color: #fff8e1; border: 2px solid #ffe082; width: 100%; max-width: 600px; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-sizing: border-box; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-        .prize-header { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: bold; color: #b78103; border-bottom: 1px solid #ffd54f; padding-bottom: 10px; margin-bottom: 15px; }
-        .prize-status-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .points-badge { background-color: #ff9800; color: white; border-radius: 20px; padding: 5px 12px; font-weight: bold; font-size: 15px; }
-        .prize-tier { font-weight: bold; font-size: 20px; color: #e65100; text-shadow: 1px 1px 1px rgba(0,0,0,0.05); }
-        .progress-bar-container { background-color: #e0e0e0; height: 12px; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+        /* 🎁 遊戲化集點獎品面板 - RWD 暖色調 */
+        .prize-panel { 
+            background-color: #fff8e1; 
+            border: 2px solid #ffe082; 
+            width: 100%; 
+            max-width: 600px; 
+            border-radius: 12px; 
+            padding: 16px; 
+            margin-bottom: 16px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06); 
+        }
+        .prize-header { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: #b78103; border-bottom: 1px solid #ffd54f; padding-bottom: 8px; margin-bottom: 12px; }
+        .prize-status-box { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
+        .points-badge { background-color: #ff9800; color: white; border-radius: 20px; padding: 4px 10px; font-weight: bold; font-size: 14px; }
+        .prize-tier { font-weight: bold; font-size: 18px; color: #e65100; }
+        .progress-bar-container { background-color: #e0e0e0; height: 10px; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
         .progress-bar { background: linear-gradient(90deg, #ffb300, #ff8f00); height: 100%; width: 0%; transition: width 0.8s ease-in-out; }
-        .prize-encouragement { font-size: 14px; line-height: 1.5; color: #5d4037; font-weight: bold; font-style: italic; background-color: #fff; padding: 10px; border-radius: 5px; border-left: 4px solid #ffa000; }
+        .prize-encouragement { font-size: 13px; line-height: 1.4; color: #5d4037; font-weight: bold; font-style: italic; background-color: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #ffa000; }
+
+        /* 📜 證書本體 - 經典高質感比例與自適應寬度 */
+        .certificate-container { 
+            background-color: #ffffff; 
+            width: 100%; 
+            max-width: 600px; 
+            padding: 5% 6%; /* 採用百分比 Padding，完美適應不同寬度 */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            border-radius: 12px; 
+            position: relative; 
+            border: 6px solid #f4f7f6; 
+            outline: 2px solid #004080; 
+            outline-offset: -8px; 
+        }
+        .cert-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #004080; padding-bottom: 12px; }
+        .cert-logo { width: 70px; height: 70px; max-width: 18vw; max-height: 18vw; object-fit: contain; margin-bottom: 8px; }
+        .school-title { color: #004080; font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
+        .cert-title { color: #333; font-size: 14px; margin: 4px 0 0 0; font-weight: bold; }
         
-        .ai-comments { background: #ebf5ff; border-left: 5px solid #007bff; padding: 20px; border-radius: 5px; margin-bottom: 20px; transition: 0.5s; }
-        .ai-comments h4 { margin-top: 0; color: #004080; font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
-        .ai-comments p { margin: 8px 0; font-size: 14px; line-height: 1.6; color: #444; }
+        /* 學生資訊欄自適應：手機垂直排列、大螢幕水平並排 */
+        .student-info { 
+            display: flex; 
+            flex-direction: row; 
+            justify-content: space-between; 
+            background: #f8f9fa; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 16px; 
+            font-size: 14px; 
+            gap: 10px;
+        }
+        .student-info p { margin: 3px 0; color: #555; font-size: 12px; }
+        .student-info strong { color: #333; font-size: 14px; }
+        
+        .chart-container { position: relative; width: 100%; height: 280px; margin-bottom: 16px; }
+        
+        .ai-comments { background: #ebf5ff; border-left: 5px solid #007bff; padding: 15px; border-radius: 6px; margin-bottom: 16px; }
+        .ai-comments h4 { margin-top: 0; color: #004080; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+        .ai-comments p { margin: 6px 0; font-size: 13px; line-height: 1.5; color: #444; }
         .highlight-positive { color: #28a745; font-weight: bold; }
         .highlight-suggest { color: #d39e00; font-weight: bold; }
         
-        .btn-group { display: flex; gap: 15px; width: 100%; max-width: 600px; margin-top: 20px; }
-        .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; text-align: center; }
-        .btn:hover { transform: translateY(-2px); }
+        /* 按鈕組 RWD */
+        .btn-group { display: flex; gap: 12px; width: 100%; max-width: 600px; margin-top: 16px; }
+        .btn { 
+            flex: 1; 
+            padding: 12px 8px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 14px; 
+            cursor: pointer; 
+            color: white; 
+            font-weight: bold; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            transition: 0.2s; 
+            text-align: center; 
+            min-height: 44px; /* 觸控友善 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:hover { transform: translateY(-1px); }
         .btn-edit { background-color: #6c757d; }
         .btn-export { background-color: #dc3545; }
         
-        .scan-float-btn { position: fixed; bottom: 20px; right: 20px; background-color: #007bff; color: white; border: none; width: 70px; height: 70px; border-radius: 50%; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; transition: 0.3s; }
-        .scan-float-btn:hover { background-color: #0056b3; transform: scale(1.1); }
-        .scan-float-btn span { font-size: 24px; margin-bottom: 2px; }
+        /* 📷 手機專用右下角大尺寸懸浮掃碼按鈕 */
+        .scan-float-btn { 
+            position: fixed; 
+            bottom: 24px; 
+            right: 24px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            width: 76px; 
+            height: 76px; 
+            border-radius: 50%; 
+            font-size: 13px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            box-shadow: 0 6px 16px rgba(0,123,255,0.4); 
+            z-index: 999; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            line-height: 1.2; 
+            transition: 0.3s; 
+        }
+        .scan-float-btn:hover { background-color: #0056b3; transform: scale(1.05); }
+        .scan-float-btn span { font-size: 26px; margin-bottom: 2px; }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+        /* 相機彈出視窗（適應各種手機螢幕） */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 450px; text-align: center; box-sizing: border-box; }
-        .modal-content h3 { margin-top: 0; color: #004080; }
-        #reader { width: 100%; max-width: 350px; margin: auto; border: 2px solid #ccc; border-radius: 10px; overflow: hidden; background: #000; }
-        .btn-close-scan { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-        
-        .info-panel { background-color: #fff; width: 100%; max-width: 600px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; overflow: hidden; border: 1px solid #ddd; }
-        .info-header { background-color: #004080; color: white; padding: 15px 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
-        .info-content { padding: 15px; display: none; background-color: #fafbfc; }
-        .info-content.active { display: block; }
-        .schedule-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .schedule-table th, .schedule-table td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #eef2f5; }
-        .schedule-table th { background-color: #f1f5f9; color: #475569; font-weight: bold; }
-        .floor-badge { background-color: #e2e8f0; color: #1e293b; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; display: inline-block; }
-        .highlight-event { color: #004080; font-weight: bold; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-sizing: border-box; }
+        .modal-content h3 { margin-top: 0; color: #004080; font-size: 16px; margin-bottom: 8px; }
+        #reader { width: 100%; max-width: 320px; margin: auto; border: 2px solid #ccc; border-radius: 8px; overflow: hidden; background: #000; }
+        .btn-close-scan { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; min-height: 40px; }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); } }
+        .updated-flash { animation: pulse 1.5s infinite; }
+
+        /* 🌟 RWD 螢幕斷點微調 🌟 */
+        @media (max-width: 480px) {
+            body { padding: 8px; padding-bottom: 110px; }
+            .certificate-container { padding: 16px 12px; border-width: 4px; outline-offset: -6px; }
+            .school-title { font-size: 16px; }
+            .cert-title { font-size: 13px; }
+            .student-info { flex-direction: column; padding: 8px; gap: 4px; }
+            .student-info div { text-align: left !important; }
+            .chart-container { height: 250px; }
+            .btn-group { flex-direction: column; gap: 8px; }
+            .btn { width: 100%; }
+            .scan-float-btn { width: 68px; height: 68px; bottom: 16px; right: 16px; font-size: 11px; }
+            .scan-float-btn span { font-size: 22px; }
+        }
     </style>
 </head>
 <body>
@@ -115,7 +241,7 @@
 <div class="prize-panel" data-html2canvas-ignore="true">
     <div class="prize-header">🎁 我的資訊日集點換獎計劃</div>
     <div class="prize-status-box">
-        <div>目前累計體驗攤位：<span class="points-badge" id="displayPoints">0</span> 攤</div>
+        <div>目前累計體驗：<span class="points-badge" id="displayPoints">0</span> 攤</div>
         <div class="prize-tier" id="displayPrize">❌ 無獎品</div>
     </div>
     <div class="progress-bar-container">
@@ -138,7 +264,7 @@
         <div>
             <p>姓名：<strong id="displayName">載入中...</strong></p>
             <p>學校：<strong id="displaySchool">載入中...</strong></p>
-            <p>電郵：<strong id="displayEmail" style="font-size: 12px; color: #888;">---</strong></p>
+            <p>電郵：<strong id="displayEmail" style="word-break: break-all; font-size: 11px; color: #888;">---</strong></p>
         </div>
         <div style="text-align: right;">
             <p>年級：<strong id="displayGrade">---</strong></p>
@@ -158,46 +284,62 @@
         <p><span class="highlight-suggest">【優化建議】</span> <span id="ai-suggest">系統分析中...</span></p>
     </div>
     
-    <div style="text-align: right; color: #999; font-size: 11px; margin-top: 20px;">
+    <div style="text-align: right; color: #999; font-size: 10px; margin-top: 16px;">
         <p>此證書由 AI 系統根據各範疇之平均評估運算生成（底分為 3.0 分）。</p>
     </div>
 </div>
 
+<!-- 底部控制按鈕 -->
 <div class="btn-group" data-html2canvas-ignore="true">
     <button class="btn btn-edit" onclick="logout()">登出 / 返回首頁</button>
     <button id="exportBtn" class="btn btn-export" onclick="exportPDF()">📥 下載 PDF 證書</button>
 </div>
 
-<!-- 📷 懸浮掃碼按鈕 -->
+<!-- 📷 懸浮掃碼按鈕 (RWD 觸控友善) -->
 <button class="scan-float-btn" onclick="startScanner()" data-html2canvas-ignore="true">
     <span>📷</span>掃描獲分
 </button>
 
+<!-- 掃描二維碼彈出視窗 -->
 <div id="scanModal" class="modal-overlay">
     <div class="modal-content">
         <h3>📷 掃描攤位二維碼</h3>
-        <p style="color: #666; font-size: 13px; margin-bottom: 15px;">對準攤位提供的評估二維碼，完成該攤位的2個掃描即可累積1次體驗次數！</p>
+        <p style="color: #666; font-size: 12px; margin-bottom: 12px;">對準攤位提供的評估二維碼，完成該攤位的2個掃描即可累積1次體驗次數！</p>
         <div id="reader"></div>
         <button class="btn-close-scan" onclick="stopScanner()">取消掃描</button>
     </div>
 </div>
 
 <script>
+    function toggleInfoPanel() {
+        const content = document.getElementById('infoContent');
+        const arrow = document.getElementById('panelArrow');
+        if (content.style.display === 'block' || content.classList.contains('active')) {
+            content.style.display = 'none';
+            content.classList.remove('active');
+            arrow.innerText = '▲';
+        } else {
+            content.style.display = 'block';
+            content.classList.add('active');
+            arrow.innerText = '▼';
+        }
+    }
+
     // ==========================================
-    // 🌟 1. 能力範疇與計分機制設定 (預設底分 3.0 分)
+    // 1. 能力範疇與計分機制設定
     // ==========================================
     const abilities = ['溝通應對', '探究解難', '邏輯思維', '突破創意', '科技應用'];
     
-    // 🌟 核心修正：底分 3.0 分之平均分計算邏輯 🌟
+    // 核心：底分 3.0 分之平均分計算邏輯
     function getAverageScores(scoresArrayOfArrays) {
         return scoresArrayOfArrays.map(arr => {
-            if (!Array.isArray(arr) || arr.length === 0) return 3.0; // 無紀錄時預設為底分 3.0 分
-            const sum = arr.reduce((a, b) => a + b, 0) + 3.0; // 將底分 3.0 加入總分中
-            return parseFloat((sum / (arr.length + 1)).toFixed(1)); // 加權平均
+            if (!Array.isArray(arr) || arr.length === 0) return 3.0; 
+            const sum = arr.reduce((a, b) => a + b, 0) + 3.0; 
+            return parseFloat((sum / (arr.length + 1)).toFixed(1)); 
         });
     }
 
-    // 計算實際體驗攤位數
+    // 修正版：總掃描成功次數除以 2 為實際遊玩攤位數
     function getParticipationScore(scoresArrayOfArrays) {
         const totalScans = scoresArrayOfArrays.reduce((total, arr) => total + (Array.isArray(arr) ? arr.length : 0), 0);
         return Math.floor(totalScans / 2);
@@ -231,7 +373,6 @@
     const liveScores = localStorage.getItem(userScoreKey);
     if (liveScores) { rawScores = JSON.parse(liveScores); } 
     
-    // 相容防護：
     if(rawScores.length > 0 && typeof rawScores[0] === 'number') {
         rawScores = rawScores.map(num => num > 0 ? [num] : []);
     }
@@ -240,9 +381,10 @@
     let avgScores = getAverageScores(rawScores);
 
     // ==========================================
-    // 繪製雷達圖 (使用底分 3.0 計算之平均分繪圖)
+    // 繪製雷達圖 (使用 RWD 最佳化字型尺寸)
     // ==========================================
     const ctx = document.getElementById('radarChart').getContext('2d');
+    const isMobile = window.innerWidth < 480;
     const radarChart = new Chart(ctx, {
         type: 'radar',
         data: {
@@ -257,8 +399,19 @@
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
-            scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, display: false }, pointLabels: { font: { size: 14, weight: 'bold' }, color: '#333' } } },
+            responsive: true, 
+            maintainAspectRatio: false,
+            scales: { 
+                r: { 
+                    min: 0, 
+                    max: 5, 
+                    ticks: { stepSize: 1, display: false }, 
+                    pointLabels: { 
+                        font: { size: isMobile ? 12 : 14, weight: 'bold' }, 
+                        color: '#333' 
+                    } 
+                } 
+            },
             plugins: { legend: { display: false } }
         }
     });
@@ -275,20 +428,20 @@
         let progressPercent = 0;
 
         if (points >= 10) {
-            prizeText = "🎁 🏆 大獎 (已解鎖！)";
-            encouragementText = "太厲害了！你已經體驗了 10 個攤位！🎉 請前往升中資訊日頒獎處，出示此手機畫面領取你的【大獎】吧！";
+            prizeText = "🏆 大獎 (已解鎖！)";
+            encouragementText = "太厲害了！你已經體驗了 10 個攤位！🎉 請前往頒獎處出示畫面，領取精美【大獎】吧！🎁";
             progressPercent = 100;
         } else if (points >= 8) {
-            prizeText = "🎁 🥈 中獎 (已解鎖！)";
-            encouragementText = "超棒的！你已成功挑戰 8 個攤位。再多去 " + (10 - points) + " 個互動教室體驗，就能把終極【大獎】抱回家囉！🔥";
+            prizeText = "🥈 中獎 (已解鎖！)";
+            encouragementText = "超棒的！再多挑戰 " + (10 - points) + " 個攤位，就能把終極【大獎】抱回家囉！加油！🔥";
             progressPercent = (points / 10) * 100;
         } else if (points >= 5) {
-            prizeText = "🎁 🥉 細獎 (已解鎖！)";
-            encouragementText = "幹得好！你已挑戰了 5 個攤位。再體驗 " + (8 - points) + " 個攤位即可升級為【中獎】，快加油前進！✨";
+            prizeText = "🥉 細獎 (已解鎖！)";
+            encouragementText = "幹得好！再體驗 " + (8 - points) + " 個學科特色活動，即可升級為【中獎】！✨";
             progressPercent = (points / 10) * 100;
         } else {
-            prizeText = "❌ 努力累積中";
-            encouragementText = "歡迎！只要再挑戰 " + (5 - points) + " 個互動教室，即可解鎖第一階段的【細獎】！快出發吧！🚀";
+            prizeText = "❌ 努力挑戰中";
+            encouragementText = "歡迎！只要挑戰 " + (5 - points) + " 個互動教室，即可解鎖首階段【細獎】！出發吧！🚀";
             progressPercent = (points / 10) * 100;
         }
 
@@ -300,12 +453,11 @@
     updatePrizeSystem(rawScores);
 
     // ==========================================
-    // 🌟 智能分級 AI 評語生成引擎 (基於加權平均分)
+    // 🌟 智能分級 AI 評語生成引擎
     // ==========================================
     function generateAIComments(calculatedAvgs) {
         const totalScore = calculatedAvgs.reduce((a, b) => a + b, 0);
         
-        // 5 個能力均為初始底分 3 分，意即學生還沒體驗任何攤位時
         if (totalScore === 15.0 && getParticipationScore(rawScores) === 0) {
             document.getElementById('ai-positive').innerText = "歡迎來到升中資訊日！你目前的能力雷達已設定好 3.0 底分。快去體驗各大特色活動吧！";
             document.getElementById('ai-suggest').innerText = "體驗並掃描評分 QR Code 後，AI 將在此即時分析你的核心潛力與學習優化建議。";
@@ -317,9 +469,9 @@
                 excellent: "你擁有極為卓越的溝通魅力！表達清晰、條理分明，能迅速在對話中抓住重點並發揮影響力，展現出天生的領袖風範。",
                 good: "你是一位非常好的傾聽者與表達者。在互動中能準確傳遞想法，並保持友善得體的應對，人際互動十分和諧。",
                 explore: "你溝通時態度誠懇，能認真傾聽他人的想法，並在適當的時機給予回應，展現了良好的學習態度。",
-                s_excellent: "你目前的溝通能力已達頂尖，建議挑戰擔任開放日導賞員或校園大使，進一步發揮同儕影響力。",
+                s_excellent: "你目前的溝通能力已達頂尖，建議挑戰擔任導賞員或校園大使，進一步發揮同儕影響力。",
                 s_good: "建議在發表意見前，先嘗試用「結論先行」的方式整理思維，並多觀察對方的反應，這會讓你的說服力倍增。",
-                s_explore: "不用害怕發表！日常中可以多在課堂上主動發言，或是對著鏡子練習朗讀，勇敢踏出第一步就是成功的開始。"
+                s_explore: "不用害怕發表！日常中可以多在課堂上主動發言，勇敢踏出第一步就是成功的開始。"
             },
             '探究解難': {
                 excellent: "你具備罕見的科學探究精神！面對複雜的實驗現象或難題時，能保持極高專注力，手腦並用，直擊問題核心。",
@@ -377,7 +529,7 @@
     generateAIComments(avgScores);
 
     // ==========================================
-    // 二維碼掃描、雙軌計分與防作弊
+    // QR Code 掃描、雙軌計分與防作弊
     // ==========================================
     let html5QrCodeScanner = null;
     function startScanner() {
@@ -386,7 +538,7 @@
             html5QrCodeScanner = new Html5Qrcode("reader");
             html5QrCodeScanner.start(
                 { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, onScanFailure
-            ).catch(err => { alert("相機開啟失敗！"); stopScanner(); });
+            ).catch(err => { alert("相機開啟失敗！請允許瀏覽器調用鏡頭權限。"); stopScanner(); });
         }, 300);
     }
     function stopScanner() {
@@ -409,7 +561,7 @@
             let localRawScores = JSON.parse(localStorage.getItem(userScoreKey)) || rawScores;
             const abilityIndex = abilities.indexOf(abilityName);
 
-            // 🛡️ 防作弊檢查：限制學生掃描同一個能力的分數
+            // 🛡️ 防作弊檢查
             if (localRawScores[abilityIndex].includes(newScore)) {
                 alert(`⚠️ 防作弊提示：你已經掃描過「${abilityName}」的 ${newScore} 分印章了！\n\n請前往其他教室挑戰，或在同一個攤位爭取不同的評分成績吧！`);
                 return;
@@ -419,16 +571,16 @@
             localRawScores[abilityIndex].push(newScore);
             localStorage.setItem(userScoreKey, JSON.stringify(localRawScores));
             
-            // 重算並更新平均分圖表
+            // 重算並更新雷達圖
             const updatedAvgs = getAverageScores(localRawScores);
             radarChart.data.datasets[0].data = updatedAvgs;
             radarChart.update();
             generateAIComments(updatedAvgs);
 
-            // 更新體驗攤位次數
+            // 更新體驗攤位次數 (除以2)
             updatePrizeSystem(localRawScores);
 
-            // 同步至全網資料庫
+            // 同步至全網資料庫供 Admin 讀取
             currentUser.scores = localRawScores;
             currentUser.status = 'active'; 
             const userIdx = mockUsers.findIndex(u => u.id === currentUser.id);
@@ -442,13 +594,20 @@
             setTimeout(() => { box.classList.remove('updated-flash'); }, 3000);
 
             const currentBoothCount = getParticipationScore(localRawScores);
-            alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得 ${newScore} 分，蜘蛛圖已更新！\n2. 【遊玩集點】目前累計完成體驗：${currentBoothCount} 個攤位。`);
+            alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得一筆 ${newScore} 分評分，已更新蜘蛛圖！\n2. 【遊玩集點】目前累計體驗完成：${currentBoothCount} 個攤位。`);
             
         } catch (e) {
-            alert("⚠️ 二維碼解析失敗！這不是有效的活動評分二維碼。");
+            alert("⚠️ 二維碼解析失敗！這不是有效的評分二維碼。");
         }
     }
     function onScanFailure(error) {}
+
+    // 監聽螢幕旋轉或大小調整，即時優化 RWD 圖表
+    window.addEventListener('resize', () => {
+        const isMobileNow = window.innerWidth < 480;
+        radarChart.options.scales.r.pointLabels.font.size = isMobileNow ? 12 : 14;
+        radarChart.update();
+    });
 
     window.addEventListener('storage', function(e) {
         if (e.key === userScoreKey) {
