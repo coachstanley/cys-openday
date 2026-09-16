@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>我的 AI 能力證書 - 明愛元朗陳震夏中學</title>
     
-    <!-- 引入 Firebase v8 CDN -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
@@ -38,7 +37,10 @@
 
         .certificate-container { background-color: #ffffff; width: 100%; max-width: 600px; padding: 5% 6%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; position: relative; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; }
         .cert-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #004080; padding-bottom: 12px; }
-        .cert-logo { width: 75px; height: 75px; max-width: 18vw; max-height: 18vw; object-fit: contain; margin-bottom: 8px; border-radius: 50%; background: #fff; }
+        
+        /* 🌟 修正：校徽自適應長寬且不裁切，匯出 PDF 不變形 🌟 */
+        .cert-logo { max-width: 90px; max-height: 90px; width: auto; height: auto; object-fit: contain; margin-bottom: 10px; }
+        
         .school-title { color: #004080; font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
         .cert-title { color: #333; font-size: 14px; margin: 4px 0 0 0; font-weight: bold; }
         
@@ -88,10 +90,12 @@
             .scan-float-btn span { font-size: 22px; }
         }
 
-        /* A4 PDF 專屬高解析度導出 CSS */
+        /* 🌟 A4 PDF 專屬高解析度導出 CSS (修正校徽變形) 🌟 */
         .exporting-a4 { width: 794px !important; height: 1123px !important; max-width: 794px !important; padding: 50px 60px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -15px !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; background-color: white !important; margin: 0 !important; }
         .exporting-a4 .cert-header { padding-bottom: 20px !important; margin-bottom: 20px !important; border-bottom-width: 3px !important; }
-        .exporting-a4 .cert-logo { width: 120px !important; height: 120px !important; max-width: none !important; margin-bottom: 15px !important;}
+        
+        .exporting-a4 .cert-logo { max-width: 160px !important; max-height: 160px !important; width: auto !important; height: auto !important; margin-bottom: 20px !important;}
+        
         .exporting-a4 .school-title { font-size: 34px !important; margin-bottom: 10px !important; }
         .exporting-a4 .cert-title { font-size: 22px !important; }
         .exporting-a4 .student-info { flex-direction: row !important; padding: 20px 30px !important; font-size: 18px !important; gap: 20px !important; margin-bottom: 30px !important;}
@@ -106,7 +110,6 @@
 </head>
 <body>
 
-<!-- 📍 頂部展覽活動地圖資訊面版 -->
 <div class="info-panel" data-html2canvas-ignore="true">
     <div class="info-header" onclick="toggleInfoPanel()">
         <span>📍 5 大特色活動導覽</span>
@@ -128,7 +131,6 @@
     </div>
 </div>
 
-<!-- 🎁 獨立集點換獎進度面板 -->
 <div class="prize-panel" data-html2canvas-ignore="true">
     <div class="prize-header">🎁 我的資訊日集點換獎計劃</div>
     <div class="prize-status-box">
@@ -139,10 +141,9 @@
     <div class="prize-encouragement" id="displayEncouragement">歡迎參與！請開始掃描攤位 QR Code 來累積遊玩次數。</div>
 </div>
 
-<!-- 📜 個人能力證書本體 -->
 <div class="certificate-container" id="certificate-area">
     <div class="cert-header">
-        <img id="certLogo" class="cert-logo" src="https://via.placeholder.com/150?text=CYS+Logo" alt="School Logo">
+        <img id="certLogo" class="cert-logo" src="https://via.placeholder.com/150?text=CYS+Logo" alt="School Logo" crossorigin="anonymous">
         <h1 class="school-title">明愛元朗陳震夏中學</h1>
         <h2 class="cert-title">🤖 薈藝博文升中資訊日 - 個人能力證書</h2>
     </div>
@@ -159,10 +160,8 @@
         </div>
     </div>
 
-    <!-- 蜘蛛雷達圖 -->
     <div class="chart-container"><canvas id="radarChart"></canvas></div>
 
-    <!-- AI 智能評語 -->
     <div class="ai-comments" id="aiCommentsBox">
         <h4>✨ AI 智能綜合能力分析</h4>
         <p><span class="highlight-positive">【優勢讚賞】</span> <span id="ai-positive">系統分析中...</span></p>
@@ -176,18 +175,15 @@
     </div>
 </div>
 
-<!-- 底部控制按鈕 -->
 <div class="btn-group" data-html2canvas-ignore="true">
     <button class="btn btn-edit" onclick="logout()">登出 / 返回首頁</button>
     <button id="exportBtn" class="btn btn-export" onclick="exportPDF()">📥 下載 A4 證書 PDF</button>
 </div>
 
-<!-- 📷 懸浮掃碼按鈕 -->
 <button class="scan-float-btn" onclick="startScanner()" data-html2canvas-ignore="true">
     <span>📷</span>掃描獲分
 </button>
 
-<!-- 掃描二維碼彈出視窗 -->
 <div id="scanModal" class="modal-overlay">
     <div class="modal-content">
         <h3>📷 掃描攤位二維碼</h3>
@@ -198,7 +194,6 @@
 </div>
 
 <script>
-    // 🌟 Firebase 連線配置
     const firebaseConfig = {
         apiKey: "AIzaSyDyfe-ItBWTeJ_6aZWjz4D8FQwWJ8XnLw4",
         authDomain: "cys-openday.firebaseapp.com",
@@ -224,7 +219,6 @@
         }
     }
 
-    // 處理 Map/Object 結構的加權平均分計算
     function getAverageScores(scoresObj) {
         return [0, 1, 2, 3, 4].map(i => {
             const arr = scoresObj[String(i)] || [];
@@ -234,7 +228,6 @@
         });
     }
 
-    // 處理 Map/Object 結構的遊玩分數計算 (掃描次數 / 2)
     function getParticipationScore(scoresObj) {
         let totalScans = 0;
         for (let i = 0; i < 5; i++) {
@@ -278,7 +271,7 @@
 
     document.getElementById('currentDate').innerText = new Date().toLocaleDateString('zh-HK');
     
-    // 🌟 從 Firebase 即時獲取最新的校徽 🌟
+    // 載入雲端校徽 (如果沒有就顯示預設)
     db.collection("system").doc("settings").get().then((doc) => {
         if (doc.exists && doc.data().logoBase64) {
             document.getElementById('certLogo').src = doc.data().logoBase64;
@@ -309,7 +302,6 @@
 
     loadUserCloudData();
 
-    // 監聽雲端資料庫
     db.collection("users").doc(loginEmail.toLowerCase()).onSnapshot((doc) => {
         if (doc.exists) {
             currentUser = doc.data();
@@ -361,7 +353,6 @@
         document.getElementById('progressBar').style.width = progressPercent + "%";
     }
 
-    // AI 評語
     function generateAIComments(calculatedAvgs) {
         const totalScore = calculatedAvgs.reduce((a, b) => a + b, 0);
         
@@ -435,7 +426,7 @@
     }
 
     // ==========================================
-    // 🛡️ 雙軌防作弊：二維碼掃描與 2 分鐘時間冷卻鎖
+    // 🛡️ 防作弊與 QR Code 解碼
     // ==========================================
     const cooldownKey = `cooldown_${loginEmail}_${loginPhone}`;
     let scanCooldowns = JSON.parse(localStorage.getItem(cooldownKey)) || {};
@@ -447,7 +438,7 @@
             html5QrCodeScanner = new Html5Qrcode("reader");
             html5QrCodeScanner.start(
                 { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, onScanFailure
-            ).catch(err => { alert("相機開啟失敗！"); stopScanner(); });
+            ).catch(err => { alert("相機開啟失敗！請允許瀏覽器調用鏡頭權限。"); stopScanner(); });
         }, 300);
     }
     function stopScanner() {
@@ -488,7 +479,7 @@
 
             stopScanner();
             
-            // 🛡️ 2 分鐘冷卻檢查 (已修改為簡潔提示)
+            // 🛡️ 2 分鐘冷卻檢查
             const qrIdentifier = `${abilityName}_${newScore}`;
             const currentTime = Date.now();
             const lastScanTime = scanCooldowns[qrIdentifier];
@@ -502,6 +493,7 @@
             scanCooldowns[qrIdentifier] = currentTime;
             localStorage.setItem(cooldownKey, JSON.stringify(scanCooldowns));
 
+            // 更新分數
             let localRawScores = currentUser.scores || {};
             if (Array.isArray(localRawScores)) {
                 localRawScores = { "0": [], "1": [], "2": [], "3": [], "4": [] };
@@ -510,6 +502,7 @@
             if (!localRawScores[keyStr]) localRawScores[keyStr] = [];
             localRawScores[keyStr].push(newScore);
 
+            // 寫入雲端
             db.collection("users").doc(loginEmail.toLowerCase()).update({
                 scores: localRawScores,
                 status: 'active'
@@ -534,7 +527,7 @@
 
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
-    // A4 滿邊距完美匯出 (無痛支援 Base64 校徽)
+    // 🌟 匯出完美無變形的 A4 證書 🌟
     async function exportPDF() {
         const btn = document.getElementById('exportBtn');
         const certArea = document.getElementById('certificate-area');
@@ -546,7 +539,7 @@
         
         try {
             radarChart.options.animation = false; radarChart.update();
-            const canvas = await html2canvas(certArea, { scale: 2, backgroundColor: '#ffffff' }); // 已移除 useCORS 以避免 Base64 衝突
+            const canvas = await html2canvas(certArea, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
             const imgData = canvas.toDataURL('image/jpeg', 1.0);
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
