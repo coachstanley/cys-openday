@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>明愛元朗陳震夏中學薈藝博文升中資訊日 - 登入與註冊</title>
     
-    <!-- 引入 Firebase v8 CDN (最穩定、不需編譯，相容各大手機) -->
+    <!-- 引入 Firebase v8 CDN -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
@@ -81,7 +81,7 @@
 </div>
 
 <script>
-    // 🌟 帶入您的專屬 Firebase 金鑰設定 🌟
+    // Firebase 金鑰設定
     const firebaseConfig = {
         apiKey: "AIzaSyDyfe-ItBWTeJ_6aZWjz4D8FQwWJ8XnLw4",
         authDomain: "cys-openday.firebaseapp.com",
@@ -91,7 +91,6 @@
         appId: "1:332588640232:web:c17dd8d7d443d2d825265d"
     };
 
-    // 初始化 Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -146,12 +145,10 @@
             return;
         }
 
-        // 從 Firebase 搜尋對應的使用者文件
         db.collection("users").doc(emailInput.toLowerCase()).get().then((doc) => {
             if (doc.exists) {
                 const userData = doc.data();
                 if (String(userData.phone).trim() === phoneInput) {
-                    // 登入成功，將憑證寫入會話
                     sessionStorage.setItem('user_email', userData.email);
                     sessionStorage.setItem('user_phone', userData.phone);
                     window.location.href = 'user.html';
@@ -163,7 +160,9 @@
             }
         }).catch((error) => {
             console.error("Firebase 讀取錯誤:", error);
-            errorDiv.innerText = '連線雲端資料庫超時，請檢查網絡連線。'; errorDiv.style.display = 'block';
+            // 🌟 診斷彈窗 🌟
+            alert(`⚠️ 雲端連線失敗！\n\n【錯誤原因】：${error.message}\n【錯誤代碼】：${error.code}`);
+            errorDiv.innerText = '連線雲端資料庫失敗，請檢查網絡。'; errorDiv.style.display = 'block';
         });
     }
 
@@ -184,9 +183,8 @@
         }
 
         regBtn.disabled = true;
-        regBtn.innerText = "正在連線雲端儲存中...";
+        regBtn.innerText = "正在寫入雲端儲存中...";
 
-        // 檢查該 Email 是否已被註冊
         db.collection("users").doc(email).get().then((doc) => {
             if (doc.exists) {
                 errorDiv.innerText = '此電子郵件已被註冊過！請直接返回登入。';
@@ -194,7 +192,6 @@
                 regBtn.disabled = false;
                 regBtn.innerText = "確認註冊並自動登入";
             } else {
-                // 建構正確的新手資料結構 (scores 為空陣列)
                 const newUser = {
                     id: Date.now(),
                     name: name,
@@ -206,18 +203,23 @@
                     scores: [[],[],[],[],[]]
                 };
 
-                // 寫入 Firebase Cloud Firestore
                 db.collection("users").doc(email).set(newUser).then(() => {
-                    alert(`🎉 註冊成功，歡迎參與資訊日！`);
+                    alert(`🎉 註冊成功，資料已同步至雲端！`);
                     sessionStorage.setItem('user_email', email);
                     sessionStorage.setItem('user_phone', phone);
                     window.location.href = 'user.html';
                 }).catch((err) => {
-                    alert("註冊寫入雲端失敗，請聯絡接待處工作人員。");
+                    // 🌟 診斷彈窗 🌟
+                    alert(`⚠️ 雲端寫入失敗！\n\n【錯誤原因】：${err.message}\n【錯誤代碼】：${err.code}`);
                     regBtn.disabled = false;
                     regBtn.innerText = "確認註冊並自動登入";
                 });
             }
+        }).catch((err) => {
+            // 🌟 診斷彈窗 🌟
+            alert(`⚠️ 雲端查詢失敗！\n\n【錯誤原因】：${err.message}\n【錯誤代碼】：${err.code}`);
+            regBtn.disabled = false;
+            regBtn.innerText = "確認註冊並自動登入";
         });
     }
 </script>
