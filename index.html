@@ -27,61 +27,34 @@
 </head>
 <body>
 
-<!-- ================= 登入區塊 ================= -->
+<!-- 登入區塊 -->
 <div class="login-box" id="loginBox">
     <h1>明愛元朗陳震夏中學<br>薈藝博文升中資訊日</h1>
     <div id="loginError" class="error-msg">帳號或密碼錯誤</div>
-    
-    <div class="input-group">
-        <input type="text" id="loginUsername" placeholder="登記電子郵件 (或管理員帳號)">
-    </div>
-    <div class="input-group">
-        <input type="password" id="loginPassword" placeholder="登記聯絡電話 (或管理員密碼)">
-    </div>
-    
+    <div class="input-group"><input type="text" id="loginUsername" placeholder="登記電子郵件 (或管理員帳號)"></div>
+    <div class="input-group"><input type="password" id="loginPassword" placeholder="登記聯絡電話 (或管理員密碼)"></div>
     <button onclick="handleLogin()">安全登入</button>
     <div class="switch-link">還沒有帳號？ <a onclick="toggleView('register')">立即自行註冊</a></div>
     <div class="env-badge" id="envBadge" style="color: #28a745;">☁️ 系統已成功啟用 Firebase 即時雲端儲存</div>
 </div>
 
-<!-- ================= 註冊區塊 ================= -->
+<!-- 註冊區塊 -->
 <div class="register-box" id="registerBox">
     <h1 style="margin-bottom: 15px;">📝 參與者自行註冊</h1>
     <div id="regError" class="error-msg"></div>
-    
-    <div class="input-group">
-        <label>姓名 <span style="color:red">*</span></label>
-        <input type="text" id="regName" placeholder="例如：陳大文">
-    </div>
-    <div class="input-group">
-        <label>就讀小學 <span style="color:red">*</span></label>
-        <select id="regSchool" class="school-select-list"></select>
-    </div>
+    <div class="input-group"><label>姓名 <span style="color:red">*</span></label><input type="text" id="regName" placeholder="例如：陳大文"></div>
+    <div class="input-group"><label>就讀小學 <span style="color:red">*</span></label><select id="regSchool" class="school-select-list"></select></div>
     <div class="input-group">
         <label>就讀年級</label>
-        <select id="regGrade">
-            <option value="小六">小六</option>
-            <option value="小五">小五</option>
-            <option value="小四">小四</option>
-            <option value="小三">小三</option>
-            <option value="其他">其他</option>
-        </select>
+        <select id="regGrade"><option value="小六">小六</option><option value="小五">小五</option><option value="小四">小四</option><option value="小三">小三</option><option value="其他">其他</option></select>
     </div>
-    <div class="input-group">
-        <label>電子郵件 (登入帳號) <span style="color:red">*</span></label>
-        <input type="email" id="regEmail" placeholder="example@email.com">
-    </div>
-    <div class="input-group">
-        <label>聯絡電話 (登入密碼) <span style="color:red">*</span></label>
-        <input type="tel" id="regPhone" placeholder="例如：91234567">
-    </div>
-    
+    <div class="input-group"><label>電子郵件 (登入帳號) <span style="color:red">*</span></label><input type="email" id="regEmail" placeholder="example@email.com"></div>
+    <div class="input-group"><label>聯絡電話 (登入密碼) <span style="color:red">*</span></label><input type="tel" id="regPhone" placeholder="例如：91234567"></div>
     <button style="background-color: #28a745;" id="regBtn" onclick="handleRegister()">確認註冊並自動登入</button>
     <div class="switch-link">已經有帳號了？ <a onclick="toggleView('login')">返回登入</a></div>
 </div>
 
 <script>
-    // Firebase 金鑰設定
     const firebaseConfig = {
         apiKey: "AIzaSyDyfe-ItBWTeJ_6aZWjz4D8FQwWJ8XnLw4",
         authDomain: "cys-openday.firebaseapp.com",
@@ -126,7 +99,6 @@
         }
     }
 
-    // 1. 雲端登入配對
     async function handleLogin() {
         const emailInput = document.getElementById('loginUsername').value.trim();
         const phoneInput = document.getElementById('loginPassword').value.trim();
@@ -137,10 +109,8 @@
             errorDiv.innerText = '請輸入電子郵件與電話號碼'; errorDiv.style.display = 'block'; return;
         }
 
-        // 管理員帳密驗證
         if (emailInput.toUpperCase() === "CYS" && phoneInput === "cys24755432") {
             sessionStorage.setItem('admin_token', 'secure_session_active');
-            localStorage.setItem('admin_token_backup', 'secure_session_active');
             window.location.href = 'admin.html';
             return;
         }
@@ -156,17 +126,13 @@
                     errorDiv.innerText = '電話號碼不正確！'; errorDiv.style.display = 'block';
                 }
             } else {
-                errorDiv.innerText = '找不到此登記電郵，請先點擊下方自行註冊！'; errorDiv.style.display = 'block';
+                errorDiv.innerText = '找不到此登記電郵，請先自行註冊！'; errorDiv.style.display = 'block';
             }
         }).catch((error) => {
-            console.error("Firebase 讀取錯誤:", error);
-            // 🌟 診斷彈窗 🌟
-            alert(`⚠️ 雲端連線失敗！\n\n【錯誤原因】：${error.message}\n【錯誤代碼】：${error.code}`);
-            errorDiv.innerText = '連線雲端資料庫失敗，請檢查網絡。'; errorDiv.style.display = 'block';
+            alert(`⚠️ 雲端連線失敗！\n\n【錯誤原因】：${error.message}`);
         });
     }
 
-    // 2. 雲端註冊
     function handleRegister() {
         const name = document.getElementById('regName').value.trim();
         const school = document.getElementById('regSchool').value;
@@ -187,11 +153,11 @@
 
         db.collection("users").doc(email).get().then((doc) => {
             if (doc.exists) {
-                errorDiv.innerText = '此電子郵件已被註冊過！請直接返回登入。';
+                errorDiv.innerText = '此電子郵件已被註冊過！';
                 errorDiv.style.display = 'block';
-                regBtn.disabled = false;
-                regBtn.innerText = "確認註冊並自動登入";
+                regBtn.disabled = false; regBtn.innerText = "確認註冊並自動登入";
             } else {
+                // 🌟 改良資料結構：將 scores 從 2D 陣列改為「物件（Map）」以符合 Firebase 規範 🌟
                 const newUser = {
                     id: Date.now(),
                     name: name,
@@ -200,26 +166,25 @@
                     email: email,
                     phone: phone,
                     status: 'pending',
-                    scores: [[],[],[],[],[]]
+                    scores: {
+                        "0": [],
+                        "1": [],
+                        "2": [],
+                        "3": [],
+                        "4": []
+                    }
                 };
 
                 db.collection("users").doc(email).set(newUser).then(() => {
-                    alert(`🎉 註冊成功，資料已同步至雲端！`);
+                    alert(`🎉 註冊成功，歡迎參與資訊日！`);
                     sessionStorage.setItem('user_email', email);
                     sessionStorage.setItem('user_phone', phone);
                     window.location.href = 'user.html';
                 }).catch((err) => {
-                    // 🌟 診斷彈窗 🌟
-                    alert(`⚠️ 雲端寫入失敗！\n\n【錯誤原因】：${err.message}\n【錯誤代碼】：${err.code}`);
-                    regBtn.disabled = false;
-                    regBtn.innerText = "確認註冊並自動登入";
+                    alert(`⚠️ 寫入失敗：${err.message}`);
+                    regBtn.disabled = false; regBtn.innerText = "確認註冊並自動登入";
                 });
             }
-        }).catch((err) => {
-            // 🌟 診斷彈窗 🌟
-            alert(`⚠️ 雲端查詢失敗！\n\n【錯誤原因】：${err.message}\n【錯誤代碼】：${err.code}`);
-            regBtn.disabled = false;
-            regBtn.innerText = "確認註冊並自動登入";
         });
     }
 </script>

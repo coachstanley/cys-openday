@@ -3,85 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>明愛元朗陳震夏中學薈藝博文升中資訊日 - 登入與註冊</title>
+    <title>我的 AI 能力證書 - 明愛元朗陳震夏中學</title>
     
-    <!-- 引入 Firebase v8 CDN (最穩定、不需編譯，相容各大手機) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    
     <style>
-        body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        .login-box, .register-box { background: white; padding: 35px 30px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
-        .register-box { display: none; }
-        h1 { font-size: 20px; color: #004080; margin-top: 0; margin-bottom: 20px; line-height: 1.4; }
-        .input-group { margin-bottom: 15px; text-align: left; }
-        .input-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: bold; }
-        .input-group input, .input-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,123,255,0.2); }
-        button:hover { background-color: #0056b3; }
-        .switch-link { margin-top: 20px; font-size: 14px; color: #666; }
-        .switch-link a { color: #007bff; text-decoration: none; font-weight: bold; cursor: pointer; }
-        .error-msg { color: #dc3545; font-size: 13px; margin-bottom: 15px; display: none; font-weight: bold; background: #ffe6e6; padding: 10px; border-radius: 5px; }
-        .env-badge { font-size: 11px; color: #888; margin-top: 20px; border-top: 1px dashed #eee; padding-top: 15px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #e9ecef; padding: 12px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding-bottom: 100px; }
+        .info-panel { background-color: #fff; width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: hidden; border: 1px solid #ddd; }
+        .info-header { background-color: #004080; color: white; padding: 14px 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-size: 15px; }
+        .info-content { padding: 12px; display: none; background-color: #fafbfc; }
+        .info-content.active { display: block; }
+        .schedule-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .schedule-table th, .schedule-table td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #eef2f5; }
+        .schedule-table th { background-color: #f1f5f9; color: #475569; font-weight: bold; }
+        .floor-badge { background-color: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; }
+        .highlight-event { color: #004080; font-weight: bold; }
+        
+        .prize-panel { background-color: #fff8e1; border: 2px solid #ffe082; width: 100%; max-width: 600px; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .prize-header { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: #b78103; border-bottom: 1px solid #ffd54f; padding-bottom: 8px; margin-bottom: 12px; }
+        .prize-status-box { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
+        .points-badge { background-color: #ff9800; color: white; border-radius: 20px; padding: 4px 10px; font-weight: bold; font-size: 14px; }
+        .prize-tier { font-weight: bold; font-size: 18px; color: #e65100; text-shadow: 1px 1px 1px rgba(0,0,0,0.05); }
+        .progress-bar-container { background-color: #e0e0e0; height: 10px; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+        .progress-bar { background: linear-gradient(90deg, #ffb300, #ff8f00); height: 100%; width: 0%; transition: width 0.8s ease-in-out; }
+        .prize-encouragement { font-size: 13px; line-height: 1.4; color: #5d4037; font-weight: bold; font-style: italic; background-color: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #ffa000; }
+
+        .certificate-container { background-color: #ffffff; width: 100%; max-width: 600px; padding: 5% 6%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; position: relative; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; }
+        .cert-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #004080; padding-bottom: 12px; }
+        .cert-logo { width: 70px; height: 70px; max-width: 18vw; max-height: 18vw; object-fit: contain; margin-bottom: 8px; }
+        .school-title { color: #004080; font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
+        .cert-title { color: #333; font-size: 14px; margin: 4px 0 0 0; font-weight: bold; }
+        
+        .student-info { display: flex; flex-direction: row; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; gap: 10px; }
+        .student-info p { margin: 3px 0; color: #555; font-size: 12px; }
+        .student-info strong { color: #333; font-size: 14px; }
+        
+        .chart-container { position: relative; width: 100%; height: 280px; margin-bottom: 16px; }
+        
+        .ai-comments { background: #ebf5ff; border-left: 5px solid #007bff; padding: 15px; border-radius: 6px; margin-bottom: 16px; }
+        .ai-comments h4 { margin-top: 0; color: #004080; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+        .ai-comments p { margin: 6px 0; font-size: 13px; line-height: 1.5; color: #444; }
+        .highlight-positive { color: #28a745; font-weight: bold; }
+        .highlight-suggest { color: #d39e00; font-weight: bold; }
+        
+        .btn-group { display: flex; gap: 12px; width: 100%; max-width: 600px; margin-top: 16px; }
+        .btn { flex: 1; padding: 12px 8px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-edit { background-color: #6c757d; }
+        .btn-export { background-color: #dc3545; }
+        
+        .scan-float-btn { position: fixed; bottom: 24px; right: 24px; background-color: #007bff; color: white; border: none; width: 76px; height: 76px; border-radius: 50%; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 16px rgba(0,123,255,0.4); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; transition: 0.3s; }
+        .scan-float-btn:hover { background-color: #0056b3; transform: scale(1.05); }
+        .scan-float-btn span { font-size: 26px; margin-bottom: 2px; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-sizing: border-box; }
+        .modal-content h3 { margin-top: 0; color: #004080; font-size: 16px; margin-bottom: 8px; }
+        #reader { width: 100%; max-width: 320px; margin: auto; border: 2px solid #ccc; border-radius: 8px; overflow: hidden; background: #000; }
+        .btn-close-scan { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; min-height: 40px; }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); } }
+        .updated-flash { animation: pulse 1.5s infinite; }
+
+        /* A4 PDF 導出樣式 */
+        .exporting-a4 { width: 794px !important; height: 1123px !important; max-width: 794px !important; padding: 50px 60px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -15px !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; background-color: white !important; margin: 0 !important; }
+        .exporting-a4 .cert-header { padding-bottom: 20px !important; margin-bottom: 20px !important; border-bottom-width: 3px !important; }
+        .exporting-a4 .cert-logo { width: 120px !important; height: 120px !important; max-width: none !important; margin-bottom: 15px !important;}
+        .exporting-a4 .school-title { font-size: 34px !important; margin-bottom: 10px !important; }
+        .exporting-a4 .cert-title { font-size: 22px !important; }
+        .exporting-a4 .student-info { flex-direction: row !important; padding: 20px 30px !important; font-size: 18px !important; gap: 20px !important; margin-bottom: 30px !important;}
+        .exporting-a4 .student-info p { font-size: 16px !important; margin: 8px 0 !important; }
+        .exporting-a4 .student-info strong { font-size: 20px !important; }
+        .exporting-a4 .chart-container { height: 450px !important; margin-bottom: 30px !important; }
+        .exporting-a4 .ai-comments { padding: 30px !important; border-left-width: 8px !important; margin-bottom: 20px !important;}
+        .exporting-a4 .ai-comments h4 { font-size: 22px !important; margin-bottom: 15px !important; }
+        .exporting-a4 .ai-comments p { font-size: 17px !important; line-height: 1.8 !important; margin: 10px 0 !important;}
+        .exporting-a4 .footer-text { font-size: 14px !important; margin-top: auto !important; }
     </style>
 </head>
 <body>
 
-<!-- ================= 登入區塊 ================= -->
-<div class="login-box" id="loginBox">
-    <h1>明愛元朗陳震夏中學<br>薈藝博文升中資訊日</h1>
-    <div id="loginError" class="error-msg">帳號或密碼錯誤</div>
-    
-    <div class="input-group">
-        <input type="text" id="loginUsername" placeholder="登記電子郵件 (或管理員帳號)">
+<!-- 📍 5 大特色活動導覽 -->
+<div class="info-panel" data-html2canvas-ignore="true">
+    <div class="info-header" onclick="toggleInfoPanel()">
+        <span>📍 5 大特色活動導覽</span>
+        <span id="panelArrow">▼</span>
     </div>
-    <div class="input-group">
-        <input type="password" id="loginPassword" placeholder="登記聯絡電話 (或管理員密碼)">
+    <div class="info-content active" id="infoContent">
+        <table class="schedule-table">
+            <thead>
+                <tr><th style="width: 15%;">樓層</th><th style="width: 55%;">特色互動教室 (地點)</th><th style="width: 30%;">性質</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="floor-badge">G/F</span></td><td><span class="highlight-event">作曲小大人活動</span> (音樂室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">2/F</span></td><td><span class="highlight-event">詩中有畫及與歷史對話</span> (圖書館)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">3/F</span></td><td><span class="highlight-event">AI創意應用挑戰賽</span> (334室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">3/F</span></td><td><span class="highlight-event">城市守護工作坊</span> (338室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">6/F</span></td><td><span class="highlight-event">鑒定實驗室</span> (化學室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+            </tbody>
+        </table>
     </div>
-    
-    <button onclick="handleLogin()">安全登入</button>
-    <div class="switch-link">還沒有帳號？ <a onclick="toggleView('register')">立即自行註冊</a></div>
-    <div class="env-badge" id="envBadge" style="color: #28a745;">☁️ 系統已成功啟用 Firebase 即時雲端儲存</div>
 </div>
 
-<!-- ================= 註冊區塊 ================= -->
-<div class="register-box" id="registerBox">
-    <h1 style="margin-bottom: 15px;">📝 參與者自行註冊</h1>
-    <div id="regError" class="error-msg"></div>
+<!-- 🎁 獨立集點換獎進度面板 -->
+<div class="prize-panel" data-html2canvas-ignore="true">
+    <div class="prize-header">🎁 我的資訊日集點換獎計劃</div>
+    <div class="prize-status-box">
+        <div>目前累計體驗：<span class="points-badge" id="displayPoints">0</span> 攤</div>
+        <div class="prize-tier" id="displayPrize">❌ 無獎品</div>
+    </div>
+    <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="prize-encouragement" id="displayEncouragement">歡迎參與！請開始掃描攤位 QR Code 來累積遊玩次數。</div>
+</div>
+
+<!-- 📜 個人能力證書本體 -->
+<div class="certificate-container" id="certificate-area">
+    <div class="cert-header">
+        <img id="certLogo" class="cert-logo" src="https://via.placeholder.com/150?text=CYS+Logo" alt="School Logo" crossorigin="anonymous">
+        <h1 class="school-title">明愛元朗陳震夏中學</h1>
+        <h2 class="cert-title">🤖 薈藝博文升中資訊日 - 個人能力證書</h2>
+    </div>
+
+    <div class="student-info">
+        <div>
+            <p>姓名：<strong id="displayName">載入中...</strong></p>
+            <p>學校：<strong id="displaySchool">載入中...</strong></p>
+            <p>電郵：<strong id="displayEmail" style="word-break: break-all; font-size: 11px; color: #888;">---</strong></p>
+        </div>
+        <div style="text-align: right;">
+            <p>年級：<strong id="displayGrade">---</strong></p>
+            <p>日期：<strong id="currentDate"></strong></p>
+        </div>
+    </div>
+
+    <!-- 蜘蛛雷達圖 -->
+    <div class="chart-container"><canvas id="radarChart"></canvas></div>
+
+    <!-- AI 智能評語 -->
+    <div class="ai-comments" id="aiCommentsBox">
+        <h4>✨ AI 智能綜合能力分析</h4>
+        <p><span class="highlight-positive">【優勢讚賞】</span> <span id="ai-positive">系統分析中...</span></p>
+        <p><span class="highlight-suggest">【優化建議】</span> <span id="ai-suggest">系統分析中...</span></p>
+    </div>
     
-    <div class="input-group">
-        <label>姓名 <span style="color:red">*</span></label>
-        <input type="text" id="regName" placeholder="例如：陳大文">
+    <div class="footer-text" style="text-align: right; color: #999; font-size: 10px; margin-top: 16px;">
+        <p>此證書由 AI 系統根據各範疇之平均評估運算生成（底分為 3.0 分）。</p>
     </div>
-    <div class="input-group">
-        <label>就讀小學 <span style="color:red">*</span></label>
-        <select id="regSchool" class="school-select-list"></select>
+</div>
+
+<!-- 底部控制按鈕 -->
+<div class="btn-group" data-html2canvas-ignore="true">
+    <button class="btn btn-edit" onclick="logout()">登出 / 返回首頁</button>
+    <button id="exportBtn" class="btn btn-export" onclick="exportPDF()">📥 下載 A4 證書 PDF</button>
+</div>
+
+<!-- 📷 懸浮掃碼按鈕 -->
+<button class="scan-float-btn" onclick="startScanner()" data-html2canvas-ignore="true">
+    <span>📷</span>掃描獲分
+</button>
+
+<div id="scanModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>📷 掃描攤位二維碼</h3>
+        <p style="color: #666; font-size: 12px; margin-bottom: 12px;">對準攤位提供的評估二維碼，完成該攤位的2個掃描即可累積1次體驗次數！</p>
+        <div id="reader"></div>
+        <button class="btn-close-scan" onclick="stopScanner()">取消掃描</button>
     </div>
-    <div class="input-group">
-        <label>就讀年級</label>
-        <select id="regGrade">
-            <option value="小六">小六</option>
-            <option value="小五">小五</option>
-            <option value="小四">小四</option>
-            <option value="小三">小三</option>
-            <option value="其他">其他</option>
-        </select>
-    </div>
-    <div class="input-group">
-        <label>電子郵件 (登入帳號) <span style="color:red">*</span></label>
-        <input type="email" id="regEmail" placeholder="example@email.com">
-    </div>
-    <div class="input-group">
-        <label>聯絡電話 (登入密碼) <span style="color:red">*</span></label>
-        <input type="tel" id="regPhone" placeholder="例如：91234567">
-    </div>
-    
-    <button style="background-color: #28a745;" id="regBtn" onclick="handleRegister()">確認註冊並自動登入</button>
-    <div class="switch-link">已經有帳號了？ <a onclick="toggleView('login')">返回登入</a></div>
 </div>
 
 <script>
-    // 🌟 帶入您的專屬 Firebase 金鑰設定 🌟
+    // 🌟 Firebase 金鑰設定
     const firebaseConfig = {
         apiKey: "AIzaSyDyfe-ItBWTeJ_6aZWjz4D8FQwWJ8XnLw4",
         authDomain: "cys-openday.firebaseapp.com",
@@ -91,135 +190,354 @@
         appId: "1:332588640232:web:c17dd8d7d443d2d825265d"
     };
 
-    // 初始化 Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const districtsSchools = {
-        "元朗區": ["光明學校", "鐘聲學校", "元朗公立中學校友會小學", "南元朗官立小學", "光明英來學校", "元朗商會小學"],
-        "天水圍區": ["樂善堂梁銶琚學校", "伊利沙伯中學舊生會小學", "天水圍官立小學", "東華三院潮陽百欣小學"],
-        "屯門區": ["保良局志豪小學", "順德聯誼總會何日東小學", "順德聯誼總會胡少渠紀念小學"],
-        "其他地區 / 其他學校": ["其他小學"]
-    };
+    const abilities = ['溝通應對', '探究解難', '邏輯思維', '突破創意', '科技應用'];
+    let radarChart = null;
 
-    window.onload = function() {
-        const select = document.getElementById('regSchool');
-        select.innerHTML = '<option value="">-- 請選擇就讀小學 --</option>';
-        for (const [district, schools] of Object.entries(districtsSchools)) {
-            const group = document.createElement('optgroup'); group.label = district;
-            schools.forEach(school => {
-                const opt = document.createElement('option'); opt.value = school; opt.textContent = school;
-                group.appendChild(opt);
-            });
-            select.appendChild(group);
-        }
-    };
-
-    function toggleView(view) {
-        document.getElementById('loginError').style.display = 'none';
-        document.getElementById('regError').style.display = 'none';
-        if (view === 'register') {
-            document.getElementById('loginBox').style.display = 'none';
-            document.getElementById('registerBox').style.display = 'block';
+    function toggleInfoPanel() {
+        const content = document.getElementById('infoContent');
+        const arrow = document.getElementById('panelArrow');
+        if (content.style.display === 'block' || content.classList.contains('active')) {
+            content.style.display = 'none'; content.classList.remove('active'); arrow.innerText = '▲';
         } else {
-            document.getElementById('registerBox').style.display = 'none';
-            document.getElementById('loginBox').style.display = 'block';
+            content.style.display = 'block'; content.classList.add('active'); arrow.innerText = '▼';
         }
     }
 
-    // 1. 雲端登入配對
-    async function handleLogin() {
-        const emailInput = document.getElementById('loginUsername').value.trim();
-        const phoneInput = document.getElementById('loginPassword').value.trim();
-        const errorDiv = document.getElementById('loginError');
-        errorDiv.style.display = 'none';
+    // 🌟 修正版：處理 Map/Object 結構的平均分計算 🌟
+    function getAverageScores(scoresObj) {
+        return [0, 1, 2, 3, 4].map(i => {
+            const arr = scoresObj[String(i)] || [];
+            if (!Array.isArray(arr) || arr.length === 0) return 3.0;
+            const sum = arr.reduce((a, b) => a + b, 0) + 3.0; 
+            return parseFloat((sum / (arr.length + 1)).toFixed(1)); 
+        });
+    }
 
-        if (!emailInput || !phoneInput) {
-            errorDiv.innerText = '請輸入電子郵件與電話號碼'; errorDiv.style.display = 'block'; return;
+    // 🌟 修正版：處理 Map/Object 結構的遊玩分數計算 (掃描次數 / 2) 🌟
+    function getParticipationScore(scoresObj) {
+        let totalScans = 0;
+        for (let i = 0; i < 5; i++) {
+            const arr = scoresObj[String(i)] || [];
+            totalScans += arr.length;
+        }
+        return Math.floor(totalScans / 2);
+    }
+
+    const loginEmail = sessionStorage.getItem('user_email');
+    const loginPhone = sessionStorage.getItem('user_phone');
+    if (!loginEmail || !loginPhone) { alert("請先登入系統！"); window.location.href = 'index.html'; }
+
+    let currentUser = null;
+
+    function loadUserCloudData() {
+        db.collection("users").doc(loginEmail.toLowerCase()).get().then((doc) => {
+            if (doc.exists) {
+                currentUser = doc.data();
+                
+                document.getElementById('displayName').innerText = currentUser.name;
+                document.getElementById('displaySchool').innerText = currentUser.school;
+                document.getElementById('displayGrade').innerText = currentUser.grade;
+                document.getElementById('displayEmail').innerText = currentUser.email;
+
+                // 🌟 相容性清洗：如果資料庫裡的分數是舊版 2D 陣列，則轉換為 Object
+                let rawScores = currentUser.scores || {};
+                if (Array.isArray(rawScores)) {
+                    rawScores = { "0": [], "1": [], "2": [], "3": [], "4": [] };
+                }
+
+                let avgScores = getAverageScores(rawScores);
+
+                radarChart.data.datasets[0].data = avgScores;
+                radarChart.update();
+
+                updatePrizeSystem(rawScores);
+                generateAIComments(avgScores);
+            }
+        });
+    }
+
+    document.getElementById('currentDate').innerText = new Date().toLocaleDateString('zh-HK');
+    const savedLogo = localStorage.getItem('school_logo'); if (savedLogo) document.getElementById('certLogo').src = savedLogo;
+
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    const isMobile = window.innerWidth < 480;
+    radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: abilities,
+            datasets: [{
+                label: '平均能力分數',
+                data: [3.0, 3.0, 3.0, 3.0, 3.0], 
+                backgroundColor: 'rgba(54, 162, 235, 0.25)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, display: false }, pointLabels: { font: { size: isMobile ? 12 : 14, weight: 'bold' }, color: '#333' } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    loadUserCloudData();
+
+    // 監聽雲端資料庫
+    db.collection("users").doc(loginEmail.toLowerCase()).onSnapshot((doc) => {
+        if (doc.exists) {
+            currentUser = doc.data();
+            let rawScores = currentUser.scores || {};
+            if (Array.isArray(rawScores)) {
+                rawScores = { "0": [], "1": [], "2": [], "3": [], "4": [] };
+            }
+            let avgScores = getAverageScores(rawScores);
+
+            radarChart.data.datasets[0].data = avgScores;
+            radarChart.update();
+            updatePrizeSystem(rawScores);
+            generateAIComments(avgScores);
+
+            const box = document.getElementById('aiCommentsBox');
+            box.classList.add('updated-flash');
+            setTimeout(() => { box.classList.remove('updated-flash'); }, 3000);
+        }
+    });
+
+    function updatePrizeSystem(scores) {
+        const points = getParticipationScore(scores); 
+        document.getElementById('displayPoints').innerText = points;
+
+        let prizeText = "❌ 尚未獲獎";
+        let encouragementText = "";
+        let progressPercent = 0;
+
+        if (points >= 10) {
+            prizeText = "🏆 大獎 (已解鎖！)";
+            encouragementText = "太厲害了！你已經體驗了 10 個攤位！🎉 請前往頒獎處出示畫面，領取精美【大獎】吧！🎁";
+            progressPercent = 100;
+        } else if (points >= 8) {
+            prizeText = "🥈 中獎 (已解鎖！)";
+            encouragementText = "超棒的！再多挑戰 " + (10 - points) + " 個攤位，就能把終極【大獎】抱回家囉！加油！🔥";
+            progressPercent = (points / 10) * 100;
+        } else if (points >= 5) {
+            prizeText = "🥉 細獎 (已解鎖！)";
+            encouragementText = "幹得好！再體驗 " + (8 - points) + " 個學科特色活動，即可升級為【中獎】！✨";
+            progressPercent = (points / 10) * 100;
+        } else {
+            prizeText = "❌ 努力挑戰中";
+            encouragementText = "歡迎！只要挑戰 " + (5 - points) + " 個互動教室，即可解鎖首階段【細獎】！出發吧！🚀";
+            progressPercent = (points / 10) * 100;
         }
 
-        // 管理員帳密驗證
-        if (emailInput.toUpperCase() === "CYS" && phoneInput === "cys24755432") {
-            sessionStorage.setItem('admin_token', 'secure_session_active');
-            localStorage.setItem('admin_token_backup', 'secure_session_active');
-            window.location.href = 'admin.html';
+        document.getElementById('displayPrize').innerText = prizeText;
+        document.getElementById('displayEncouragement').innerText = encouragementText;
+        document.getElementById('progressBar').style.width = progressPercent + "%";
+    }
+
+    // AI 評語
+    function generateAIComments(calculatedAvgs) {
+        const totalScore = calculatedAvgs.reduce((a, b) => a + b, 0);
+        
+        if (totalScore === 15.0 && getParticipationScore(currentUser.scores || {}) === 0) {
+            document.getElementById('ai-positive').innerText = "歡迎來到升中資訊日！你目前的能力雷達已設定好 3.0 底分。快去體驗各大特色活動吧！";
+            document.getElementById('ai-suggest').innerText = "體驗並掃描評分 QR Code 後，AI 將在此即時分析你的核心潛力與學習優化建議。";
             return;
         }
 
-        // 從 Firebase 搜尋對應的使用者文件
-        db.collection("users").doc(emailInput.toLowerCase()).get().then((doc) => {
-            if (doc.exists) {
-                const userData = doc.data();
-                if (String(userData.phone).trim() === phoneInput) {
-                    // 登入成功，將憑證寫入會話
-                    sessionStorage.setItem('user_email', userData.email);
-                    sessionStorage.setItem('user_phone', userData.phone);
-                    window.location.href = 'user.html';
-                } else {
-                    errorDiv.innerText = '電話號碼不正確！'; errorDiv.style.display = 'block';
-                }
-            } else {
-                errorDiv.innerText = '找不到此登記電郵，請先點擊下方自行註冊！'; errorDiv.style.display = 'block';
+        const commentMatrix = {
+            '溝通應對': {
+                excellent: "你擁有極為卓越的溝通魅力！表達清晰、條理分明，能迅速在對話中抓住重點並發揮影響力，展現出天生的領袖風範。",
+                good: "你是一位非常好的傾聽者與表達者。在互動中能準確傳遞想法，並保持友善得體的應對，人際互動十分和諧。",
+                explore: "你溝通時態度誠懇，能認真傾聽他人的想法，並在適當的時機給予回應，展現了良好的學習態度。",
+                s_excellent: "你目前的溝通能力已達頂尖，建議挑戰擔任導賞員或校園大使，進一步發揮同儕影響力。",
+                s_good: "建議在發表意見前，先嘗試用「結論先行」的方式整理思維，並多觀察對方的反應，這會讓你的說服力倍增。",
+                s_explore: "不用害怕發表！日常中可以多在課堂上主動發言，勇敢踏出第一步就是成功的開始。"
+            },
+            '探究解難': {
+                excellent: "你具備罕見的科學探究精神！面對複雜的實驗現象或難題時，能保持極高專注力，手腦並用，直擊問題核心。",
+                good: "你的動手能力與解難意識非常優秀.在面對未知任務時，能按部按班地操作實驗並觀察變化，思維具有良好的系統性。",
+                explore: "面對繁瑣的實驗步驟，你表現出了難得的耐心，能依照指引一步步完成操作，為你的科學探究奠定了穩固基石。",
+                s_excellent: "建議你多接觸中學階段的 STEAM 專題研習，嘗試解決現實生活中的工程或環境問題，將你的解難天賦轉化為實質貢獻。",
+                s_good: "當實驗遇到瓶頸時，嘗試撰寫「錯誤日記」，記錄不成功的嘗試並分析原因，這能幫助你突破常規，找到新路徑。",
+                s_explore: "面對挑戰時，可以試著將大問題拆解成多個「小目標」，一個個攻克；多向身旁的老師同學請教，能幫你快速找到頭緒。"
+            },
+            '邏輯思維': {
+                excellent: "你的大腦就像一台高速運算的超級電腦！邏輯推理極為嚴密，能瞬間從蛛絲馬跡中理出因果關係，思維架構無懈可擊。",
+                good: "你擁有非常清晰的條理性。在分析數據或推導線索時，能客觀地根據證據說話，思維敏捷且判斷準確。",
+                explore: "你在思考問題時十分專注，能夠努力去尋找事物之間的規律，展現了積極求知與探索的精神。",
+                s_excellent: "建議可以開始接觸基礎的編程演算法（如 Python 邏輯）或參與數學謎題挑戰，為你強大的邏輯思維提供更高階的舞台。",
+                s_good: "嘗試學習使用「心智圖 (Mind Map)」來整理複雜的知識，這能幫助你將零散的邏輯線索串聯成更宏觀的網絡。",
+                s_explore: "平時可以多玩一些數獨（Sudoku）、桌遊策略卡牌或推理謎題，這能在輕鬆有趣的氛圍中快速鍛鍊邏輯思考力。"
+            },
+            '突破創意': {
+                excellent: "你的創意天馬行空，美感直覺驚人！你的作品中充滿了強烈的個人風格與生命力，是當之無愧的未來小小藝術創作者。",
+                good: "你具備良好的審美素養與豐富的想像力，能將經典的文學或旋律融入自己的想法，創作富有溫度的原創作品。",
+                explore: "你對美感與藝術抱有極高的好奇心與熱情，在創作過程中樂於大膽嘗試，展現了極佳的藝術可塑性。",
+                s_excellent: "建議你嘗試進行跨界創作（例如：用程式生成藝術，或用科技編曲），讓你的突破性創意有更寬廣的表現媒介。",
+                s_good: "試著刻意挑戰「打破常規」的練習，例如嘗試使用從未使用過的色彩搭配，或寫一段結構新穎的音樂，打破創作慣性。",
+                s_explore: "不要害羞！創意的第一步是模仿與重組。多欣賞優秀的作品，把喜歡的元素嘗試融合在一起，就是屬於你的新創意。"
+            },
+            '科技應用': {
+                excellent: "你是一位極具潛力的數位原著民！對 AI 工具與科技系統的理解與操作得心應手，人機協同能力堪稱專家級別。",
+                good: "你能熟練地使用各種數位工具，並能快速理解 AI 提示詞的撰寫要領與機器學習的基本原理，科技素養相當扎實。",
+                explore: "你勇於踏出舒適圈去體驗高科技產品，對人工智慧與機器人分類展現了積極的學習熱誠與適應力。",
+                s_excellent: "AI 時代已經來臨，建議你可以深入了解 AI 提示詞工程，或報讀本校的資訊科技特色課程，搶先掌握未來核心競爭力！",
+                s_good: "建議你可以多嘗試在日常學習中使用 AI 來輔助你尋找資料、潤飾文字或做翻譯，讓科技真正成為你的第二大腦。",
+                s_explore: "科技其實十分好玩！建議從圖形化編程（如 Scratch）或有趣的 AI 互動小工具開始體驗，建立你對科技應用的信心。"
             }
-        }).catch((error) => {
-            console.error("Firebase 讀取錯誤:", error);
-            errorDiv.innerText = '連線雲端資料庫超時，請檢查網絡連線。'; errorDiv.style.display = 'block';
-        });
+        };
+
+        const maxScore = Math.max(...calculatedAvgs);
+        const minScore = Math.min(...calculatedAvgs);
+        
+        const bestAbility = abilities[calculatedAvgs.indexOf(maxScore)];
+        const weakAbility = abilities[calculatedAvgs.indexOf(minScore)];
+
+        let positiveText = "";
+        if (maxScore >= 4.5) { positiveText = commentMatrix[bestAbility].excellent; } 
+        else if (maxScore >= 3.0) { positiveText = commentMatrix[bestAbility].good; } 
+        else { positiveText = commentMatrix[bestAbility].explore; }
+
+        let suggestText = "";
+        if (minScore >= 4.5) { suggestText = commentMatrix[weakAbility].s_excellent; } 
+        else if (minScore >= 3.0) { suggestText = commentMatrix[weakAbility].s_good; } 
+        else { suggestText = commentMatrix[weakAbility].s_explore; }
+
+        document.getElementById('ai-positive').innerText = positiveText;
+        document.getElementById('ai-suggest').innerText = suggestText;
     }
 
-    // 2. 雲端註冊
-    function handleRegister() {
-        const name = document.getElementById('regName').value.trim();
-        const school = document.getElementById('regSchool').value;
-        const grade = document.getElementById('regGrade').value;
-        const email = document.getElementById('regEmail').value.trim().toLowerCase();
-        const phone = document.getElementById('regPhone').value.trim();
-        const errorDiv = document.getElementById('regError');
-        const regBtn = document.getElementById('regBtn');
-        
-        errorDiv.style.display = 'none';
+    // ==========================================
+    // 二維碼掃描、雙軌計分與防作弊
+    // ==========================================
+    const cooldownKey = `cooldown_${loginEmail}_${loginPhone}`;
+    let scanCooldowns = JSON.parse(localStorage.getItem(cooldownKey)) || {};
 
-        if (!name || !school || !email || !phone) {
-            errorDiv.innerText = '請填寫所有必填欄位！'; errorDiv.style.display = 'block'; return;
-        }
+    let html5QrCodeScanner = null;
+    function startScanner() {
+        document.getElementById('scanModal').classList.add('active');
+        setTimeout(() => {
+            html5QrCodeScanner = new Html5Qrcode("reader");
+            html5QrCodeScanner.start(
+                { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, onScanFailure
+            ).catch(err => { alert("相機開啟失敗！"); stopScanner(); });
+        }, 300);
+    }
+    function stopScanner() {
+        if (html5QrCodeScanner) { html5QrCodeScanner.stop().then(() => { document.getElementById('scanModal').classList.remove('active'); }).catch(e => { document.getElementById('scanModal').classList.remove('active');}); } 
+        else { document.getElementById('scanModal').classList.remove('active'); }
+    }
 
-        regBtn.disabled = true;
-        regBtn.innerText = "正在連線雲端儲存中...";
-
-        // 檢查該 Email 是否已被註冊
-        db.collection("users").doc(email).get().then((doc) => {
-            if (doc.exists) {
-                errorDiv.innerText = '此電子郵件已被註冊過！請直接返回登入。';
-                errorDiv.style.display = 'block';
-                regBtn.disabled = false;
-                regBtn.innerText = "確認註冊並自動登入";
-            } else {
-                // 建構正確的新手資料結構 (scores 為空陣列)
-                const newUser = {
-                    id: Date.now(),
-                    name: name,
-                    school: school,
-                    grade: grade,
-                    email: email,
-                    phone: phone,
-                    status: 'pending',
-                    scores: [[],[],[],[],[]]
-                };
-
-                // 寫入 Firebase Cloud Firestore
-                db.collection("users").doc(email).set(newUser).then(() => {
-                    alert(`🎉 註冊成功，歡迎參與資訊日！`);
-                    sessionStorage.setItem('user_email', email);
-                    sessionStorage.setItem('user_phone', phone);
-                    window.location.href = 'user.html';
-                }).catch((err) => {
-                    alert("註冊寫入雲端失敗，請聯絡接待處工作人員。");
-                    regBtn.disabled = false;
-                    regBtn.innerText = "確認註冊並自動登入";
-                });
+    function onScanSuccess(decodedText, decodedResult) {
+        try {
+            let trimmedText = decodedText.trim();
+            if (trimmedText.startsWith('"') && trimmedText.endsWith('"')) {
+                trimmedText = trimmedText.substring(1, trimmedText.length - 1);
             }
-        });
+
+            let scanData;
+            try {
+                scanData = JSON.parse(trimmedText);
+            } catch(jsonErr) {
+                throw new Error("格式非有效的 JSON 物件");
+            }
+
+            let abilityIndexNum = -1;
+            let abilityName = "";
+            if (typeof scanData.ability === 'number' && scanData.ability >= 0 && scanData.ability <= 4) {
+                abilityIndexNum = scanData.ability;
+                abilityName = abilities[abilityIndexNum];
+            } else if (typeof scanData.ability === 'string') {
+                abilityName = scanData.ability.trim();
+                abilityIndexNum = abilities.indexOf(abilityName);
+            }
+
+            const newScore = parseInt(scanData.score); 
+            
+            if (abilityIndexNum === -1 || isNaN(newScore) || newScore < 1 || newScore > 5) {
+                alert(`⚠️ 掃描失敗：這不是資訊日的有效二維碼！\n\n【解析能力】：${abilityName}\n【解析分數】：${newScore}`); 
+                return;
+            }
+
+            stopScanner();
+            
+            // 🛡️ 2 分鐘冷卻檢查
+            const qrIdentifier = `${abilityName}_${newScore}`;
+            const currentTime = Date.now();
+            const lastScanTime = scanCooldowns[qrIdentifier];
+            const cooldownPeriod = 2 * 60 * 1000;
+
+            if (lastScanTime && (currentTime - lastScanTime) < cooldownPeriod) {
+                alert(`⚠️ 已掃瞄此二維碼`);
+                return;
+            }
+
+            scanCooldowns[qrIdentifier] = currentTime;
+            localStorage.setItem(cooldownKey, JSON.stringify(scanCooldowns));
+
+            // 更新數據
+            let localRawScores = currentUser.scores || {};
+            if (Array.isArray(localRawScores)) {
+                localRawScores = { "0": [], "1": [], "2": [], "3": [], "4": [] };
+            }
+            const keyStr = String(abilityIndexNum);
+            if (!localRawScores[keyStr]) localRawScores[keyStr] = [];
+            localRawScores[keyStr].push(newScore);
+
+            // 寫入雲端 (完美解決巢狀陣列問題)
+            db.collection("users").doc(loginEmail.toLowerCase()).update({
+                scores: localRawScores,
+                status: 'active'
+            }).then(() => {
+                const currentBoothCount = getParticipationScore(localRawScores);
+                alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得一筆 ${newScore} 分評分，已更新蜘蛛圖！\n2. 【遊玩集點】目前累計體驗完成：${currentBoothCount} 個攤位。`);
+            }).catch((err) => {
+                alert("雲端連線失敗，請稍後重試。");
+            });
+            
+        } catch (e) {
+            alert(`⚠️ 二維碼解析失敗！\n\n【錯誤訊息】：${e.message}\n\n【掃描到的原文】：\n"${decodedText}"`);
+        }
+    }
+    function onScanFailure(error) {}
+
+    window.addEventListener('resize', () => {
+        const isMobileNow = window.innerWidth < 480;
+        radarChart.options.scales.r.pointLabels.font.size = isMobileNow ? 12 : 14;
+        radarChart.update();
+    });
+
+    function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
+
+    async function exportPDF() {
+        const btn = document.getElementById('exportBtn');
+        const certArea = document.getElementById('certificate-area');
+        btn.disabled = true; btn.innerText = '⏳ 正在生成 A4 證書...';
+        
+        certArea.classList.add('exporting-a4');
+        radarChart.resize();
+        await new Promise(r => setTimeout(r, 400));
+        
+        try {
+            radarChart.options.animation = false; radarChart.update();
+            const canvas = await html2canvas(certArea, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+            pdf.save(`CYS_資訊日能力證書_${currentUser.name}.pdf`);
+        } catch (error) { console.error(error); alert("PDF 生成失敗，請稍後再試。"); } 
+        finally { 
+            certArea.classList.remove('exporting-a4'); 
+            radarChart.resize();
+            btn.disabled = false; btn.innerText = '📥 下載 A4 證書 PDF'; 
+        }
     }
 </script>
+
 </body>
 </html>
