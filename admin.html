@@ -117,7 +117,7 @@
             </div>
             <div class="table-container">
                 <table>
-                    <thead><tr><th>姓名</th><th>就讀學校</th><th>年級</th><th>聯絡方式</th><th>參與狀態 (參與分數 / 獎品)</th><th>操作</th></tr></thead>
+                    <thead><tr><th>姓名</th><th>就讀學校</th><th>年級</th><th>聯絡方式</th><th>參與狀態 (體驗攤位數 / 獎品)</th><th>操作</th></tr></thead>
                     <tbody id="userTableBody"></tbody>
                 </table>
             </div>
@@ -125,7 +125,7 @@
         
         <div id="qrcodes" class="section">
             <h1 class="header-title">🖼️ 下載 1-5 分評估 QR Code</h1>
-            <p style="color: #666; margin-bottom: 20px;">請列印對應的 QR Code 放置於攤位。學生掃描後，系統會自動累積他們的參與次數（參與分數）並重算平均分。</p>
+            <p style="color: #666; margin-bottom: 20px;">請列印對應的 QR Code 放置於攤位。學生掃描後，系統會自動累積他們的參與次數並重算平均分。</p>
             <div id="qr-container"></div>
         </div>
 
@@ -205,15 +205,16 @@
         const abilities = ['溝通應對', '探究解難', '邏輯思維', '突破創意', '科技應用'];
         let previewChartInstance = null;
 
-        // 🌟 核心修正：底分 3.0 分之平均分計算邏輯 🌟
+        // 🌟 底分 3.0 分之平均分計算邏輯
         function getAverageScores(scoresArrayOfArrays) {
             return scoresArrayOfArrays.map(arr => {
-                if (!Array.isArray(arr) || arr.length === 0) return 3.0; // 無紀錄時預設為底分 3.0 分
-                const sum = arr.reduce((a, b) => a + b, 0) + 3.0; // 將底分 3.0 加入總分
-                return parseFloat((sum / (arr.length + 1)).toFixed(1)); // 加權平均並保留一位小數
+                if (!Array.isArray(arr) || arr.length === 0) return 3.0;
+                const sum = arr.reduce((a, b) => a + b, 0) + 3.0; 
+                return parseFloat((sum / (arr.length + 1)).toFixed(1)); 
             });
         }
 
+        // 🌟 總次數除以 2 為體驗攤位數
         function getParticipationScore(scoresArrayOfArrays) {
             const totalScans = scoresArrayOfArrays.reduce((total, arr) => total + (Array.isArray(arr) ? arr.length : 0), 0);
             return Math.floor(totalScans / 2);
@@ -289,7 +290,7 @@
                 const pScore = getParticipationScore(user.scores || [[],[],[],[],[]]);
                 const prize = getPrizeLevel(pScore);
                 const statusBadge = user.status === 'active' ? 
-                    `<span class="status active">已報到</span><br><span class="prize-badge">集點：${pScore}分 (${prize})</span>` : 
+                    `<span class="status active">已報到</span><br><span class="prize-badge">集點：${pScore}攤 (${prize})</span>` : 
                     `<span class="status pending">未報到</span>`;
                 
                 tbody.innerHTML += `<tr>
@@ -319,7 +320,7 @@
 
         function exportToCSV() {
             if (mockUsers.length === 0) return;
-            let csvContent = "\ufeff姓名,就讀學校,年級,電子郵件,聯絡電話,參與狀態,參與分數 (總體驗次數),符合獎品,溝通應對(平均),探究解難(平均),邏輯思維(平均),突破創意(平均),科技應用(平均)\n";
+            let csvContent = "\ufeff姓名,就讀學校,年級,電子郵件,聯絡電話,參與狀態,體驗攤位數,符合獎品,溝通應對(平均),探究解難(平均),邏輯思維(平均),突破創意(平均),科技應用(平均)\n";
             mockUsers.forEach(user => {
                 const s = user.scores || [[], [], [], [], []];
                 const avg = getAverageScores(s);
@@ -359,9 +360,8 @@
                 options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { r: { min: 0, max: 5, ticks: { display: false } } }, plugins: { legend: { display: false } } }
             });
 
-            // 智能評語基於含底分的平均分
             const totalScore = avgScores.reduce((a, b) => a + b, 0);
-            if (totalScore === 15.0) { // 5個都是3分
+            if (totalScore === 15.0) { 
                 document.getElementById('certAiPositive').innerText = "參與升中資訊日活動以解鎖你的能力雷達圖與優勢分析！"; 
                 document.getElementById('certAiSuggest').innerText = "等待體驗數據中...";
             } else {
@@ -407,7 +407,7 @@
 
         new Chart(document.getElementById('schoolChart').getContext('2d'), { type: 'bar', data: { labels: ['元朗公立中學校友會小學', '光明學校', '鐘聲學校', '南元朗官立小學', '其他'], datasets: [{ label: '人數', data: [150, 120, 95, 80, 411], backgroundColor: 'rgba(54, 162, 235, 0.6)' }] }, options: { responsive: true, maintainAspectRatio: false } });
 
-        // 產生 25 個 QR Code (5能力 x 5分數)
+        // 🌟 穩定傳輸版 QR Code：使用代碼(Index)取代中文
         const qrContainer = document.getElementById('qr-container');
         abilities.forEach((ability, index) => {
             const catDiv = document.createElement('div'); catDiv.className = 'qr-category';
@@ -420,7 +420,7 @@
                 card.innerHTML = `<canvas id="${cId}"></canvas><p>${s} 分</p><button class="download-btn" onclick="downloadQR('${cId}', '${ability}_${s}分')">⬇️ 下載圖檔</button>`;
                 document.getElementById(`qr-grid-${index}`).appendChild(card);
                 
-                const qrData = JSON.stringify({ ability: ability, score: s, token: "CYS-SECURE-KEY" });
+                const qrData = JSON.stringify({ ability: index, score: s, token: "CYS-SECURE-KEY" });
                 new QRious({ element: document.getElementById(cId), value: qrData, size: 120, level: 'H' });
             }
         });

@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        /* 🌟 RWD 基礎重設 🌟 */
+        /* RWD 基礎重設 */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body { 
@@ -21,53 +21,22 @@
             flex-direction: column; 
             align-items: center; 
             min-height: 100vh;
-            padding-bottom: 100px; /* 為懸浮按鈕預留空間 */
+            padding-bottom: 100px;
         }
 
-        /* 📍 展覽活動地圖導覽面版 - RWD 自動縮放 */
-        .info-panel { 
-            background-color: #fff; 
-            width: 100%; 
-            max-width: 600px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
-            margin-bottom: 16px; 
-            overflow: hidden; 
-            border: 1px solid #ddd; 
-        }
-        .info-header { 
-            background-color: #004080; 
-            color: white; 
-            padding: 14px 16px; 
-            font-weight: bold; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            cursor: pointer; 
-            user-select: none;
-            font-size: 15px;
-        }
+        .info-panel { background-color: #fff; width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: hidden; border: 1px solid #ddd; }
+        .info-header { background-color: #004080; color: white; padding: 14px 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-size: 15px; }
         .info-content { padding: 12px; display: none; background-color: #fafbfc; }
         .info-content.active { display: block; }
         
-        /* 響應式表格：在小螢幕上自動調整間距 */
         .schedule-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .schedule-table th, .schedule-table td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #eef2f5; }
         .schedule-table th { background-color: #f1f5f9; color: #475569; font-weight: bold; }
         .floor-badge { background-color: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; }
         .highlight-event { color: #004080; font-weight: bold; }
         
-        /* 🎁 遊戲化集點獎品面板 - RWD 暖色調 */
-        .prize-panel { 
-            background-color: #fff8e1; 
-            border: 2px solid #ffe082; 
-            width: 100%; 
-            max-width: 600px; 
-            border-radius: 12px; 
-            padding: 16px; 
-            margin-bottom: 16px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06); 
-        }
+        /* 🎁 遊戲化集點獎品面板 */
+        .prize-panel { background-color: #fff8e1; border: 2px solid #ffe082; width: 100%; max-width: 600px; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
         .prize-header { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: #b78103; border-bottom: 1px solid #ffd54f; padding-bottom: 8px; margin-bottom: 12px; }
         .prize-status-box { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
         .points-badge { background-color: #ff9800; color: white; border-radius: 20px; padding: 4px 10px; font-weight: bold; font-size: 14px; }
@@ -76,36 +45,14 @@
         .progress-bar { background: linear-gradient(90deg, #ffb300, #ff8f00); height: 100%; width: 0%; transition: width 0.8s ease-in-out; }
         .prize-encouragement { font-size: 13px; line-height: 1.4; color: #5d4037; font-weight: bold; font-style: italic; background-color: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #ffa000; }
 
-        /* 📜 證書本體 - 經典高質感比例與自適應寬度 */
-        .certificate-container { 
-            background-color: #ffffff; 
-            width: 100%; 
-            max-width: 600px; 
-            padding: 5% 6%; /* 採用百分比 Padding，完美適應不同寬度 */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-            border-radius: 12px; 
-            position: relative; 
-            border: 6px solid #f4f7f6; 
-            outline: 2px solid #004080; 
-            outline-offset: -8px; 
-        }
+        /* 📜 證書本體 RWD */
+        .certificate-container { background-color: #ffffff; width: 100%; max-width: 600px; padding: 5% 6%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; position: relative; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; }
         .cert-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #004080; padding-bottom: 12px; }
         .cert-logo { width: 70px; height: 70px; max-width: 18vw; max-height: 18vw; object-fit: contain; margin-bottom: 8px; }
         .school-title { color: #004080; font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
         .cert-title { color: #333; font-size: 14px; margin: 4px 0 0 0; font-weight: bold; }
         
-        /* 學生資訊欄自適應：手機垂直排列、大螢幕水平並排 */
-        .student-info { 
-            display: flex; 
-            flex-direction: row; 
-            justify-content: space-between; 
-            background: #f8f9fa; 
-            padding: 12px; 
-            border-radius: 8px; 
-            margin-bottom: 16px; 
-            font-size: 14px; 
-            gap: 10px;
-        }
+        .student-info { display: flex; flex-direction: row; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; gap: 10px; }
         .student-info p { margin: 3px 0; color: #555; font-size: 12px; }
         .student-info strong { color: #333; font-size: 14px; }
         
@@ -117,56 +64,17 @@
         .highlight-positive { color: #28a745; font-weight: bold; }
         .highlight-suggest { color: #d39e00; font-weight: bold; }
         
-        /* 按鈕組 RWD */
         .btn-group { display: flex; gap: 12px; width: 100%; max-width: 600px; margin-top: 16px; }
-        .btn { 
-            flex: 1; 
-            padding: 12px 8px; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 14px; 
-            cursor: pointer; 
-            color: white; 
-            font-weight: bold; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-            transition: 0.2s; 
-            text-align: center; 
-            min-height: 44px; /* 觸控友善 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .btn { flex: 1; padding: 12px 8px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; }
         .btn:hover { transform: translateY(-1px); }
         .btn-edit { background-color: #6c757d; }
         .btn-export { background-color: #dc3545; }
         
         /* 📷 手機專用右下角大尺寸懸浮掃碼按鈕 */
-        .scan-float-btn { 
-            position: fixed; 
-            bottom: 24px; 
-            right: 24px; 
-            background-color: #007bff; 
-            color: white; 
-            border: none; 
-            width: 76px; 
-            height: 76px; 
-            border-radius: 50%; 
-            font-size: 13px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            box-shadow: 0 6px 16px rgba(0,123,255,0.4); 
-            z-index: 999; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            line-height: 1.2; 
-            transition: 0.3s; 
-        }
+        .scan-float-btn { position: fixed; bottom: 24px; right: 24px; background-color: #007bff; color: white; border: none; width: 76px; height: 76px; border-radius: 50%; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 16px rgba(0,123,255,0.4); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; transition: 0.3s; }
         .scan-float-btn:hover { background-color: #0056b3; transform: scale(1.05); }
         .scan-float-btn span { font-size: 26px; margin-bottom: 2px; }
 
-        /* 相機彈出視窗（適應各種手機螢幕） */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-sizing: border-box; }
@@ -177,7 +85,6 @@
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); } }
         .updated-flash { animation: pulse 1.5s infinite; }
 
-        /* 🌟 RWD 螢幕斷點微調 🌟 */
         @media (max-width: 480px) {
             body { padding: 8px; padding-bottom: 110px; }
             .certificate-container { padding: 16px 12px; border-width: 4px; outline-offset: -6px; }
@@ -195,7 +102,7 @@
 </head>
 <body>
 
-<!-- 📍 頂部展覽活動地圖資訊面版 (匯出 PDF 時自動隱藏) -->
+<!-- 📍 頂部展覽活動地圖資訊面版 -->
 <div class="info-panel" data-html2canvas-ignore="true">
     <div class="info-header" onclick="toggleInfoPanel()">
         <span>📍 5 大特色活動導覽</span>
@@ -207,49 +114,25 @@
                 <tr><th style="width: 15%;">樓層</th><th style="width: 55%;">特色互動教室 (地點)</th><th style="width: 30%;">性質</th></tr>
             </thead>
             <tbody>
-                <tr>
-                    <td><span class="floor-badge">G/F</span></td>
-                    <td><span class="highlight-event">作曲小大人活動</span> (音樂室)</td>
-                    <td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td>
-                </tr>
-                <tr>
-                    <td><span class="floor-badge">2/F</span></td>
-                    <td><span class="highlight-event">詩中有畫及與歷史對話</span> (圖書館)</td>
-                    <td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td>
-                </tr>
-                <tr>
-                    <td><span class="floor-badge">3/F</span></td>
-                    <td><span class="highlight-event">AI創意應用挑戰賽</span> (334室)</td>
-                    <td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td>
-                </tr>
-                <tr>
-                    <td><span class="floor-badge">3/F</span></td>
-                    <td><span class="highlight-event">城市守護工作坊</span> (338室)</td>
-                    <td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td>
-                </tr>
-                <tr>
-                    <td><span class="floor-badge">6/F</span></td>
-                    <td><span class="highlight-event">鑒定實驗室</span> (化學室)</td>
-                    <td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td>
-                </tr>
+                <tr><td><span class="floor-badge">G/F</span></td><td><span class="highlight-event">作曲小大人活動</span> (音樂室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">2/F</span></td><td><span class="highlight-event">詩中有畫及與歷史對話</span> (圖書館)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">3/F</span></td><td><span class="highlight-event">AI創意應用挑戰賽</span> (334室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">3/F</span></td><td><span class="highlight-event">城市守護工作坊</span> (338室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">6/F</span></td><td><span class="highlight-event">鑒定實驗室</span> (化學室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- 🎁 獨立集點換獎進度面板 (匯出 PDF 時會自動隱藏) -->
+<!-- 🎁 獨立集點換獎進度面板 -->
 <div class="prize-panel" data-html2canvas-ignore="true">
     <div class="prize-header">🎁 我的資訊日集點換獎計劃</div>
     <div class="prize-status-box">
         <div>目前累計體驗：<span class="points-badge" id="displayPoints">0</span> 攤</div>
         <div class="prize-tier" id="displayPrize">❌ 無獎品</div>
     </div>
-    <div class="progress-bar-container">
-        <div class="progress-bar" id="progressBar"></div>
-    </div>
-    <div class="prize-encouragement" id="displayEncouragement">
-        歡迎參與！請開始掃描攤位 QR Code 來累積遊玩次數。
-    </div>
+    <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="prize-encouragement" id="displayEncouragement">歡迎參與！請開始掃描攤位 QR Code 來累積遊玩次數。</div>
 </div>
 
 <!-- 📜 個人能力證書本體 -->
@@ -272,10 +155,8 @@
         </div>
     </div>
 
-    <!-- 蜘蛛雷達圖 (展示5科能力平均分) -->
-    <div class="chart-container">
-        <canvas id="radarChart"></canvas>
-    </div>
+    <!-- 蜘蛛雷達圖 -->
+    <div class="chart-container"><canvas id="radarChart"></canvas></div>
 
     <!-- AI 智能評語 -->
     <div class="ai-comments" id="aiCommentsBox">
@@ -295,7 +176,7 @@
     <button id="exportBtn" class="btn btn-export" onclick="exportPDF()">📥 下載 PDF 證書</button>
 </div>
 
-<!-- 📷 懸浮掃碼按鈕 (RWD 觸控友善) -->
+<!-- 📷 懸浮掃碼按鈕 -->
 <button class="scan-float-btn" onclick="startScanner()" data-html2canvas-ignore="true">
     <span>📷</span>掃描獲分
 </button>
@@ -315,22 +196,18 @@
         const content = document.getElementById('infoContent');
         const arrow = document.getElementById('panelArrow');
         if (content.style.display === 'block' || content.classList.contains('active')) {
-            content.style.display = 'none';
-            content.classList.remove('active');
-            arrow.innerText = '▲';
+            content.style.display = 'none'; content.classList.remove('active'); arrow.innerText = '▲';
         } else {
-            content.style.display = 'block';
-            content.classList.add('active');
-            arrow.innerText = '▼';
+            content.style.display = 'block'; content.classList.add('active'); arrow.innerText = '▼';
         }
     }
 
     // ==========================================
-    // 1. 能力範疇與計分機制設定
+    // 🌟 1. 能力範疇與計分機制設定
     // ==========================================
     const abilities = ['溝通應對', '探究解難', '邏輯思維', '突破創意', '科技應用'];
     
-    // 核心：底分 3.0 分之平均分計算邏輯
+    // 核心：底分 3.0 分之加權平均分計算邏輯
     function getAverageScores(scoresArrayOfArrays) {
         return scoresArrayOfArrays.map(arr => {
             if (!Array.isArray(arr) || arr.length === 0) return 3.0; 
@@ -339,7 +216,7 @@
         });
     }
 
-    // 修正版：總掃描成功次數除以 2 為實際遊玩攤位數
+    // 核心：總掃描成功次數除以 2 為實際遊玩攤位數
     function getParticipationScore(scoresArrayOfArrays) {
         const totalScans = scoresArrayOfArrays.reduce((total, arr) => total + (Array.isArray(arr) ? arr.length : 0), 0);
         return Math.floor(totalScans / 2);
@@ -381,7 +258,7 @@
     let avgScores = getAverageScores(rawScores);
 
     // ==========================================
-    // 繪製雷達圖 (使用 RWD 最佳化字型尺寸)
+    // 繪製雷達圖 
     // ==========================================
     const ctx = document.getElementById('radarChart').getContext('2d');
     const isMobile = window.innerWidth < 480;
@@ -399,19 +276,8 @@
             }]
         },
         options: {
-            responsive: true, 
-            maintainAspectRatio: false,
-            scales: { 
-                r: { 
-                    min: 0, 
-                    max: 5, 
-                    ticks: { stepSize: 1, display: false }, 
-                    pointLabels: { 
-                        font: { size: isMobile ? 12 : 14, weight: 'bold' }, 
-                        color: '#333' 
-                    } 
-                } 
-            },
+            responsive: true, maintainAspectRatio: false,
+            scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, display: false }, pointLabels: { font: { size: isMobile ? 12 : 14, weight: 'bold' }, color: '#333' } } },
             plugins: { legend: { display: false } }
         }
     });
@@ -449,7 +315,6 @@
         document.getElementById('displayEncouragement').innerText = encouragementText;
         document.getElementById('progressBar').style.width = progressPercent + "%";
     }
-    
     updatePrizeSystem(rawScores);
 
     // ==========================================
@@ -529,7 +394,7 @@
     generateAIComments(avgScores);
 
     // ==========================================
-    // QR Code 掃描、雙軌計分與防作弊
+    // 🛡️ 數字代號相容版：二維碼掃描與防作弊驗證
     // ==========================================
     let html5QrCodeScanner = null;
     function startScanner() {
@@ -546,31 +411,27 @@
         else { document.getElementById('scanModal').classList.remove('active'); }
     }
 
-       // =======================================================
-    // 🛡️ 升級安全相容版：二維碼掃描與防作弊驗證 
-    // =======================================================
     function onScanSuccess(decodedText, decodedResult) {
         try {
-            // 嘗試解析 JSON 格式
             let scanData;
             try {
                 scanData = JSON.parse(decodedText);
             } catch(jsonErr) {
-                // 防呆：如果掃描到的是純文字（非JSON），例如 "溝通應對_5"
-                if (decodedText.includes('_')) {
-                    const parts = decodedText.split('_');
-                    scanData = { ability: parts[0], score: parseInt(parts[1]), token: "CYS-SECURE-KEY" };
-                } else {
-                    throw new Error("格式非JSON");
-                }
+                throw new Error("格式非有效的 JSON");
             }
 
-            const abilityName = scanData.ability;
+            let abilityName = "";
+            // 自動轉換數字 Index 回中文名稱
+            if (typeof scanData.ability === 'number' && scanData.ability >= 0 && scanData.ability <= 4) {
+                abilityName = abilities[scanData.ability];
+            } else if (typeof scanData.ability === 'string') {
+                abilityName = scanData.ability.trim();
+            }
+
             const newScore = parseInt(scanData.score); 
             
-            // 驗證能力名稱與分數範圍
             if (!abilities.includes(abilityName) || isNaN(newScore) || newScore < 1 || newScore > 5) {
-                alert(`⚠️ 掃描失敗：這不是我們升中資訊日的評分 QR Code！\n\n【二維碼內容】：${decodedText}`); 
+                alert(`⚠️ 掃描失敗：這不是升中資訊日的有效 QR Code！\n\n【解析出的能力】：${abilityName}\n【解析出的分數】：${newScore}`); 
                 return;
             }
 
@@ -579,26 +440,24 @@
             let localRawScores = JSON.parse(localStorage.getItem(userScoreKey)) || rawScores;
             const abilityIndex = abilities.indexOf(abilityName);
 
-            // 🛡️ 防作弊檢查：限制學生掃描同一個能力的分數
+            // 🛡️ 防作弊檢查
             if (localRawScores[abilityIndex].includes(newScore)) {
-                alert(`⚠️ 防作弊提示：你已經收集過「${abilityName}」的 ${newScore} 分印章了！\n\n請前往其他教室挑戰，或在同一個攤位爭取不同的評分成績吧！🚀`);
+                alert(`⚠️ 防作弊提示：你已經掃描過「${abilityName}」的 ${newScore} 分印章了！\n\n請前往其他教室挑戰，或在同一個攤位爭取不同的評分成績吧！🚀`);
                 return;
             }
 
-            // 成功加分（雙軌機制）
+            // 成功加分
             localRawScores[abilityIndex].push(newScore);
             localStorage.setItem(userScoreKey, JSON.stringify(localRawScores));
             
-            // 重算並更新雷達圖與 AI 評語
+            // 重算並更新
             const updatedAvgs = getAverageScores(localRawScores);
             radarChart.data.datasets[0].data = updatedAvgs;
             radarChart.update();
             generateAIComments(updatedAvgs);
-
-            // 更新體驗攤位次數
             updatePrizeSystem(localRawScores);
 
-            // 同步至系統全域資料庫
+            // 同步至全網
             currentUser.scores = localRawScores;
             currentUser.status = 'active'; 
             const userIdx = mockUsers.findIndex(u => u.id === currentUser.id);
@@ -615,14 +474,11 @@
             alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得 ${newScore} 分，蜘蛛圖已更新！\n2. 【遊玩集點】目前累計體驗完成：${currentBoothCount} 個攤位。`);
             
         } catch (e) {
-            // 終極防呆彈窗，直接顯示掃描到的內容
-            alert(`⚠️ 二維碼解析失敗！\n\n【您掃描到的文字】：\n"${decodedText}"\n\n【正確格式應為】：\n{"ability":"溝通應對","score":5}`);
+            alert(`⚠️ 二維碼解析失敗！\n\n【錯誤訊息】：${e.message}\n\n【掃描到的原文】：\n"${decodedText}"`);
         }
     }
-
     function onScanFailure(error) {}
 
-    // 監聽螢幕旋轉或大小調整，即時優化 RWD 圖表
     window.addEventListener('resize', () => {
         const isMobileNow = window.innerWidth < 480;
         radarChart.options.scales.r.pointLabels.font.size = isMobileNow ? 12 : 14;
