@@ -7,7 +7,6 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -16,6 +15,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #e9ecef; padding: 12px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding-bottom: 100px; }
+        
         .info-panel { background-color: #fff; width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: hidden; border: 1px solid #ddd; }
         .info-header { background-color: #004080; color: white; padding: 14px 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-size: 15px; }
         .info-content { padding: 12px; display: none; background-color: #fafbfc; }
@@ -23,7 +23,7 @@
         .schedule-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .schedule-table th, .schedule-table td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #eef2f5; }
         .schedule-table th { background-color: #f1f5f9; color: #475569; font-weight: bold; }
-        .floor-badge { background-color: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; }
+        .floor-badge { background-color: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; white-space: nowrap; }
         .highlight-event { color: #004080; font-weight: bold; }
         
         .prize-panel { background-color: #fff8e1; border: 2px solid #ffe082; width: 100%; max-width: 600px; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
@@ -37,10 +37,7 @@
 
         .certificate-container { background-color: #ffffff; width: 100%; max-width: 600px; padding: 5% 6%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; position: relative; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; }
         .cert-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #004080; padding-bottom: 12px; }
-        
-        /* 🌟 修正：校徽自適應長寬且不裁切，匯出 PDF 不變形 🌟 */
         .cert-logo { max-width: 90px; max-height: 90px; width: auto; height: auto; object-fit: contain; margin-bottom: 10px; }
-        
         .school-title { color: #004080; font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
         .cert-title { color: #333; font-size: 14px; margin: 4px 0 0 0; font-weight: bold; }
         
@@ -76,26 +73,10 @@
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); } }
         .updated-flash { animation: pulse 1.5s infinite; }
 
-        @media (max-width: 480px) {
-            body { padding: 8px; padding-bottom: 110px; }
-            .certificate-container { padding: 16px 12px; border-width: 4px; outline-offset: -6px; }
-            .school-title { font-size: 16px; }
-            .cert-title { font-size: 13px; }
-            .student-info { flex-direction: column; padding: 8px; gap: 4px; }
-            .student-info div { text-align: left !important; }
-            .chart-container { height: 250px; }
-            .btn-group { flex-direction: column; gap: 8px; }
-            .btn { width: 100%; }
-            .scan-float-btn { width: 68px; height: 68px; bottom: 16px; right: 16px; font-size: 11px; }
-            .scan-float-btn span { font-size: 22px; }
-        }
-
-        /* 🌟 A4 PDF 專屬高解析度導出 CSS (修正校徽變形) 🌟 */
+        /* A4 PDF 導出樣式 */
         .exporting-a4 { width: 794px !important; height: 1123px !important; max-width: 794px !important; padding: 50px 60px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -15px !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; background-color: white !important; margin: 0 !important; }
         .exporting-a4 .cert-header { padding-bottom: 20px !important; margin-bottom: 20px !important; border-bottom-width: 3px !important; }
-        
         .exporting-a4 .cert-logo { max-width: 160px !important; max-height: 160px !important; width: auto !important; height: auto !important; margin-bottom: 20px !important;}
-        
         .exporting-a4 .school-title { font-size: 34px !important; margin-bottom: 10px !important; }
         .exporting-a4 .cert-title { font-size: 22px !important; }
         .exporting-a4 .student-info { flex-direction: row !important; padding: 20px 30px !important; font-size: 18px !important; gap: 20px !important; margin-bottom: 30px !important;}
@@ -110,22 +91,27 @@
 </head>
 <body>
 
+<!-- 🌟 更新：9 大活動編號導覽面版 🌟 -->
 <div class="info-panel" data-html2canvas-ignore="true">
     <div class="info-header" onclick="toggleInfoPanel()">
-        <span>📍 5 大特色活動導覽</span>
+        <span>📍 精彩活動導覽地圖</span>
         <span id="panelArrow">▼</span>
     </div>
     <div class="info-content active" id="infoContent">
         <table class="schedule-table">
             <thead>
-                <tr><th style="width: 15%;">樓層</th><th style="width: 55%;">特色互動教室 (地點)</th><th style="width: 30%;">性質</th></tr>
+                <tr><th style="width: 20%;">編號</th><th style="width: 55%;">活動名稱</th><th style="width: 25%;">性質</th></tr>
             </thead>
             <tbody>
-                <tr><td><span class="floor-badge">G/F</span></td><td><span class="highlight-event">作曲小大人活動</span> (音樂室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
-                <tr><td><span class="floor-badge">2/F</span></td><td><span class="highlight-event">詩中有畫及與歷史對話</span> (圖書館)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
-                <tr><td><span class="floor-badge">3/F</span></td><td><span class="highlight-event">AI創意應用挑戰賽</span> (334室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
-                <tr><td><span class="floor-badge">3/F</span></td><td><span class="highlight-event">城市守護工作坊</span> (338室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
-                <tr><td><span class="floor-badge">6/F</span></td><td><span class="highlight-event">鑒定實驗室</span> (化學室)</td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">活動 1</span></td><td><span class="highlight-event">中文AI詩中有畫</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">活動 2</span></td><td><span class="highlight-event">英文AI Voice-over Activity</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">活動 3</span></td><td><span class="highlight-event">數學AI代數闖關</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">活動 4</span></td><td><span class="highlight-event">音樂AI 配樂小神童</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">活動 5</span></td><td><span class="highlight-event">人文AI 鄭和下西洋：尋寶大冒險</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">活動 6</span></td><td><span class="highlight-event">視藝AI靈魂圖譜：AI 個人專屬符號</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">活動 7</span></td><td><span class="highlight-event">AI朱古力拉花工作坊</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">活動 8</span></td><td><span class="highlight-event">升就AI小天使：解鎖我的未來職業</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
+                <tr><td><span class="floor-badge">活動 9</span></td><td><span class="highlight-event">學生支援模擬賽車電競體驗</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
             </tbody>
         </table>
     </div>
@@ -143,7 +129,7 @@
 
 <div class="certificate-container" id="certificate-area">
     <div class="cert-header">
-        <img id="certLogo" class="cert-logo" src="https://via.placeholder.com/150?text=CYS+Logo" alt="School Logo" crossorigin="anonymous">
+        <img id="certLogo" class="cert-logo" src="https://www.cys.edu.hk/img/logo.png" alt="School Logo" crossorigin="anonymous">
         <h1 class="school-title">明愛元朗陳震夏中學</h1>
         <h2 class="cert-title">🤖 薈藝博文升中資訊日 - 個人能力證書</h2>
     </div>
@@ -168,7 +154,6 @@
         <p><span class="highlight-suggest">【優化建議】</span> <span id="ai-suggest">系統分析中...</span></p>
     </div>
     
-    <!-- 🌟 版權與系統設計聲明區塊 🌟 -->
     <div class="footer-text" style="text-align: right; color: #555; font-size: 11px; margin-top: 18px; border-top: 1px solid #eef2f5; padding-top: 12px; font-weight: bold; line-height: 1.6;">
         <p>此證書由明愛元朗陳震夏中學 AI 能力評估系統運算生成。</p>
         <p style="color: #004080; margin-top: 4px;">本系統由副校長張耀宗博士設計，版權均為學校所有。</p>
@@ -270,13 +255,6 @@
     }
 
     document.getElementById('currentDate').innerText = new Date().toLocaleDateString('zh-HK');
-    
-    // 載入雲端校徽 (如果沒有就顯示預設)
-    db.collection("system").doc("settings").get().then((doc) => {
-        if (doc.exists && doc.data().logoBase64) {
-            document.getElementById('certLogo').src = doc.data().logoBase64;
-        }
-    });
 
     const ctx = document.getElementById('radarChart').getContext('2d');
     const isMobile = window.innerWidth < 480;
@@ -425,9 +403,6 @@
         document.getElementById('ai-suggest').innerText = suggestText;
     }
 
-    // ==========================================
-    // 🛡️ 防作弊與 QR Code 解碼
-    // ==========================================
     const cooldownKey = `cooldown_${loginEmail}_${loginPhone}`;
     let scanCooldowns = JSON.parse(localStorage.getItem(cooldownKey)) || {};
 
@@ -479,7 +454,7 @@
 
             stopScanner();
             
-            // 🛡️ 2 分鐘冷卻檢查
+            // 2 分鐘冷卻檢查
             const qrIdentifier = `${abilityName}_${newScore}`;
             const currentTime = Date.now();
             const lastScanTime = scanCooldowns[qrIdentifier];
@@ -493,7 +468,6 @@
             scanCooldowns[qrIdentifier] = currentTime;
             localStorage.setItem(cooldownKey, JSON.stringify(scanCooldowns));
 
-            // 更新分數
             let localRawScores = currentUser.scores || {};
             if (Array.isArray(localRawScores)) {
                 localRawScores = { "0": [], "1": [], "2": [], "3": [], "4": [] };
@@ -502,7 +476,6 @@
             if (!localRawScores[keyStr]) localRawScores[keyStr] = [];
             localRawScores[keyStr].push(newScore);
 
-            // 寫入雲端
             db.collection("users").doc(loginEmail.toLowerCase()).update({
                 scores: localRawScores,
                 status: 'active'
@@ -527,7 +500,6 @@
 
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
-    // 🌟 匯出完美無變形的 A4 證書 🌟
     async function exportPDF() {
         const btn = document.getElementById('exportBtn');
         const certArea = document.getElementById('certificate-area');
@@ -539,7 +511,7 @@
         
         try {
             radarChart.options.animation = false; radarChart.update();
-            const canvas = await html2canvas(certArea, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+            const canvas = await html2canvas(certArea, { scale: 2, backgroundColor: '#ffffff' });
             const imgData = canvas.toDataURL('image/jpeg', 1.0);
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');

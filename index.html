@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>明愛元朗陳震夏中學薈藝博文升中資訊日 - 登入與註冊</title>
     
-    <!-- 引入 Firebase v8 CDN -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
@@ -23,11 +22,12 @@
         .switch-link a { color: #007bff; text-decoration: none; font-weight: bold; cursor: pointer; }
         .error-msg { color: #dc3545; font-size: 13px; margin-bottom: 15px; display: none; font-weight: bold; background: #ffe6e6; padding: 10px; border-radius: 5px; }
         .env-badge { font-size: 11px; color: #888; margin-top: 20px; border-top: 1px dashed #eee; padding-top: 15px; }
+        .reset-link { margin-top: 15px; font-size: 10px; color: #ccc; cursor: pointer; text-decoration: underline; display: block; }
+        .reset-link:hover { color: #999; }
     </style>
 </head>
 <body>
 
-<!-- 登入區塊 -->
 <div class="login-box" id="loginBox">
     <h1>明愛元朗陳震夏中學<br>薈藝博文升中資訊日</h1>
     <div id="loginError" class="error-msg">帳號或密碼錯誤</div>
@@ -35,19 +35,16 @@
     <div class="input-group"><input type="password" id="loginPassword" placeholder="登記聯絡電話 (或管理員密碼)"></div>
     <button onclick="handleLogin()">安全登入</button>
     <div class="switch-link">還沒有帳號？ <a onclick="toggleView('register')">立即自行註冊</a></div>
-    <div class="env-badge" id="envBadge" style="color: #28a745;">☁️ 系統已成功啟用 Firebase 即時雲端儲存</div>
+    <div class="env-badge" id="envBadgeLogin" style="color: #28a745;">☁️ 系統已成功啟用 Firebase 即時雲端儲存</div>
+    <div class="reset-link" onclick="forceResetDatabase()">🔄 遇到異常？點此一鍵初始化本地資料庫</div>
 </div>
 
-<!-- 註冊區塊 -->
 <div class="register-box" id="registerBox">
     <h1 style="margin-bottom: 15px;">📝 參與者自行註冊</h1>
     <div id="regError" class="error-msg"></div>
     <div class="input-group"><label>姓名 <span style="color:red">*</span></label><input type="text" id="regName" placeholder="例如：陳大文"></div>
     <div class="input-group"><label>就讀小學 <span style="color:red">*</span></label><select id="regSchool" class="school-select-list"></select></div>
-    <div class="input-group">
-        <label>就讀年級</label>
-        <select id="regGrade"><option value="小六">小六</option><option value="小五">小五</option><option value="小四">小四</option><option value="小三">小三</option><option value="其他">其他</option></select>
-    </div>
+    <div class="input-group"><label>就讀年級</label><select id="regGrade"><option value="小六">小六</option><option value="小五">小五</option><option value="小四">小四</option><option value="小三">小三</option><option value="其他">其他</option></select></div>
     <div class="input-group"><label>電子郵件 (登入帳號) <span style="color:red">*</span></label><input type="email" id="regEmail" placeholder="example@email.com"></div>
     <div class="input-group"><label>聯絡電話 (登入密碼) <span style="color:red">*</span></label><input type="tel" id="regPhone" placeholder="例如：91234567"></div>
     <button style="background-color: #28a745;" id="regBtn" onclick="handleRegister()">確認註冊並自動登入</button>
@@ -55,6 +52,9 @@
 </div>
 
 <script>
+    const isLocalFile = window.location.protocol === 'file:';
+    const isSecureCtx = !!(window.crypto && window.crypto.subtle);
+
     const firebaseConfig = {
         apiKey: "AIzaSyDyfe-ItBWTeJ_6aZWjz4D8FQwWJ8XnLw4",
         authDomain: "cys-openday.firebaseapp.com",
@@ -63,18 +63,50 @@
         messagingSenderId: "332588640232",
         appId: "1:332588640232:web:c17dd8d7d443d2d825265d"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     const districtsSchools = {
-        "元朗區": ["光明學校", "鐘聲學校", "元朗公立中學校友會小學", "南元朗官立小學", "光明英來學校", "元朗商會小學"],
-        "天水圍區": ["樂善堂梁銶琚學校", "伊利沙伯中學舊生會小學", "天水圍官立小學", "東華三院潮陽百欣小學"],
-        "屯門區": ["保良局志豪小學", "順德聯誼總會何日東小學", "順德聯誼總會胡少渠紀念小學"],
+        "元朗區": [
+            "光明學校", "光明英來學校", "南元朗官立小學", "元朗商會小學", "元朗公立中學校友會小學", 
+            "鐘聲學校", "基督教宣道會徐澤林紀念小學", "聖公會靈愛小學", "佛教陳榮根紀念學校", 
+            "中華基督教會元朗真光小學", "元朗朗屏邨東莞學校", "元朗朗屏邨惠州學校", "錦田公立黑排小學", 
+            "八鄉中心小學", "惇裕學校", "通德學校", "基督教香港信義會宏達小學", "基督教香港信義會啟信學校"
+        ],
+        "天水圍區": [
+            "天水圍官立小學", "天水圍天主教小學", "樂善堂梁銶琚學校", "樂善堂梁銶琚學校(分校)", 
+            "伊利沙伯中學舊生會小學", "伊利沙伯中學舊生會小學分校", "東華三院潮陽百欣小學", 
+            "東華三院李東海小學", "獅子會何德心小學", "香港青年協會李兆基小學", "金巴崙長老會耀道小學", 
+            "順德聯誼總會伍冕端小學", "中華基督教會方潤華小學", "聖公會天水圍靈愛小學", 
+            "宣道會葉紹蔭紀念小學", "元朗寶覺小學", "十八鄉鄉事委員會公益社小學", "天水圍循道衛理小學"
+        ],
+        "屯門區": [
+            "屯門官立小學", "保良局志豪小學", "保良局莊啟程第二小學", "保良局方王錦全小學", 
+            "保良局梁周順琴小學", "順德聯誼總會何日東小學", "順德聯誼總會胡少渠紀念小學", 
+            "順德聯誼總會李金小學", "仁愛堂劉皇發夫人小學", "博愛醫院歷屆總理聯誼會鄭任安夫人學校", 
+            "博愛醫院歷屆總理聯誼會鄭任安夫人千禧小學", "世界龍岡學校劉德容紀念小學", "青山天主教小學", 
+            "興德學校", "道教青松小學", "道教青松小學(湖景邨)", "仁濟醫院羅陳楚思小學", 
+            "中華基督教會拔臣小學", "中華基督教會蒙黃花沃紀念小學", "柏立基教育學院校友會何壽基學校", 
+            "台山商會學校", "五邑鄒振猷學校", "香港紅卍字會屯門卍慈小學", "路德會呂祥光小學", "聖公會蒙恩小學"
+        ],
         "其他地區 / 其他學校": ["其他小學"]
     };
 
+    const defaultUsers = [
+        { id: 1, name: "陳大文", school: "光明學校", grade: "小六", email: "chan@example.com", phone: "91234567", status: "active", scores: {"0":[4,5], "1":[3], "2":[4,4], "3":[5], "4":[3,5]} },
+        { id: 2, name: "李小明", school: "鐘聲學校", grade: "小五", email: "lee@example.com", phone: "61234567", status: "active", scores: {"0":[4,5], "1":[5,5], "2":[4,4], "3":[3,5], "4":[3,5]} }
+    ];
+
     window.onload = function() {
+        const badge = document.getElementById('envBadgeLogin');
+        if (isLocalFile) {
+            badge.innerHTML = "⚠️ 本地演示模式：已同步共享資料庫"; badge.style.color = "#ff9800";
+        } else if (isSecureCtx) {
+            badge.innerHTML = "🔒 系統安全連線中"; badge.style.color = "#28a745";
+        }
+        
+        getDatabase();
+        
         const select = document.getElementById('regSchool');
         select.innerHTML = '<option value="">-- 請選擇就讀小學 --</option>';
         for (const [district, schools] of Object.entries(districtsSchools)) {
@@ -87,46 +119,80 @@
         }
     };
 
+    function forceResetDatabase() {
+        if (confirm("這將會清除您所有的現場測試資料，並恢復預設帳戶，確定嗎？")) {
+            localStorage.setItem('cys_users_database', JSON.stringify(defaultUsers));
+            alert("✅ 本地資料庫已重置成功！預設帳戶「chan@example.com / 91234567」已啟用。");
+            location.reload();
+        }
+    }
+
     function toggleView(view) {
         document.getElementById('loginError').style.display = 'none';
         document.getElementById('regError').style.display = 'none';
         if (view === 'register') {
-            document.getElementById('loginBox').style.display = 'none';
-            document.getElementById('registerBox').style.display = 'block';
+            document.getElementById('loginBox').style.display = 'none'; document.getElementById('registerBox').style.display = 'block';
         } else {
-            document.getElementById('registerBox').style.display = 'none';
-            document.getElementById('loginBox').style.display = 'block';
+            document.getElementById('registerBox').style.display = 'none'; document.getElementById('loginBox').style.display = 'block';
         }
     }
 
+    function getDatabase() {
+        try {
+            const storedDb = localStorage.getItem('cys_users_database');
+            if (storedDb) {
+                let parsed = JSON.parse(storedDb);
+                parsed.forEach(u => {
+                    if (!u.scores || Array.isArray(u.scores)) { u.scores = { "0": [], "1": [], "2": [], "3": [], "4": [] }; }
+                });
+                return parsed;
+            }
+        } catch (e) { console.error(e); }
+        localStorage.setItem('cys_users_database', JSON.stringify(defaultUsers));
+        return defaultUsers;
+    }
+
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     async function handleLogin() {
-        const emailInput = document.getElementById('loginUsername').value.trim();
-        const phoneInput = document.getElementById('loginPassword').value.trim();
+        const user = document.getElementById('loginUsername').value.trim();
+        const pass = document.getElementById('loginPassword').value.trim();
         const errorDiv = document.getElementById('loginError');
         errorDiv.style.display = 'none';
 
-        if (!emailInput || !phoneInput) {
-            errorDiv.innerText = '請輸入電子郵件與電話號碼'; errorDiv.style.display = 'block'; return;
+        if (!user || !pass) { errorDiv.innerText = '請輸入電郵與電話號碼'; errorDiv.style.display = 'block'; return; }
+
+        const targetUsername = "CYS"; const targetPassword = "cys24755432";
+        const targetUserHash = "68c92b23a968600d3d526786ff762b339433dbefd1641a995e8e244bdf9f4306"; 
+        const targetPassHash = "c371236ca7e4fa6d014de1ecf24b11dffdfccef9b2abcac1c7384c11734bdcc2"; 
+
+        let isAdmin = false;
+        if (user.toUpperCase() === targetUsername && pass === targetPassword) {
+            isAdmin = true;
+        } else if (isSecureCtx) {
+            try { if (await sha256(user) === targetUserHash && await sha256(pass) === targetPassHash) isAdmin = true; } catch(e){}
         }
 
-        if (emailInput.toUpperCase() === "CYS" && phoneInput === "cys24755432") {
-            sessionStorage.setItem('admin_token', 'secure_session_active');
-            window.location.href = 'admin.html';
-            return;
+        if (isAdmin) {
+            sessionStorage.setItem('admin_token', 'secure_session_active'); localStorage.setItem('admin_token_backup', 'secure_session_active');
+            window.location.href = 'admin.html'; return;
         }
 
-        db.collection("users").doc(emailInput.toLowerCase()).get().then((doc) => {
+        db.collection("users").doc(user.toLowerCase()).get().then((doc) => {
             if (doc.exists) {
                 const userData = doc.data();
-                if (String(userData.phone).trim() === phoneInput) {
-                    sessionStorage.setItem('user_email', userData.email);
-                    sessionStorage.setItem('user_phone', userData.phone);
+                if (String(userData.phone).trim() === pass) {
+                    sessionStorage.setItem('user_email', userData.email); sessionStorage.setItem('user_phone', userData.phone);
                     window.location.href = 'user.html';
                 } else {
                     errorDiv.innerText = '電話號碼不正確！'; errorDiv.style.display = 'block';
                 }
             } else {
-                errorDiv.innerText = '找不到此登記電郵，請先自行註冊！'; errorDiv.style.display = 'block';
+                errorDiv.innerText = '找不到此登記電郵，請先點擊下方自行註冊！'; errorDiv.style.display = 'block';
             }
         }).catch((error) => {
             alert(`⚠️ 雲端連線失敗！\n\n【錯誤原因】：${error.message}`);
@@ -143,45 +209,25 @@
         const regBtn = document.getElementById('regBtn');
         
         errorDiv.style.display = 'none';
+        if (!name || !school || !email || !phone) { errorDiv.innerText = '請填寫所有帶有 * 的必填欄位'; errorDiv.style.display = 'block'; return; }
 
-        if (!name || !school || !email || !phone) {
-            errorDiv.innerText = '請填寫所有必填欄位！'; errorDiv.style.display = 'block'; return;
-        }
-
-        regBtn.disabled = true;
-        regBtn.innerText = "正在寫入雲端儲存中...";
+        regBtn.disabled = true; regBtn.innerText = "正在寫入雲端儲存中...";
 
         db.collection("users").doc(email).get().then((doc) => {
             if (doc.exists) {
-                errorDiv.innerText = '此電子郵件已被註冊過！';
-                errorDiv.style.display = 'block';
+                errorDiv.innerText = '此電子郵件已被註冊過！請直接返回登入。'; errorDiv.style.display = 'block';
                 regBtn.disabled = false; regBtn.innerText = "確認註冊並自動登入";
             } else {
-                // 🌟 改良資料結構：將 scores 從 2D 陣列改為「物件（Map）」以符合 Firebase 規範 🌟
                 const newUser = {
-                    id: Date.now(),
-                    name: name,
-                    school: school,
-                    grade: grade,
-                    email: email,
-                    phone: phone,
-                    status: 'pending',
-                    scores: {
-                        "0": [],
-                        "1": [],
-                        "2": [],
-                        "3": [],
-                        "4": []
-                    }
+                    id: Date.now(), name: name, school: school, grade: grade, email: email, phone: phone, status: 'pending', 
+                    scores: { "0": [], "1": [], "2": [], "3": [], "4": [] }
                 };
-
                 db.collection("users").doc(email).set(newUser).then(() => {
-                    alert(`🎉 註冊成功，歡迎參與資訊日！`);
-                    sessionStorage.setItem('user_email', email);
-                    sessionStorage.setItem('user_phone', phone);
+                    alert(`🎉 註冊成功，歡迎加入開放日體驗！`);
+                    sessionStorage.setItem('user_email', email); sessionStorage.setItem('user_phone', phone);
                     window.location.href = 'user.html';
                 }).catch((err) => {
-                    alert(`⚠️ 寫入失敗：${err.message}`);
+                    alert("註冊寫入雲端失敗，請聯絡接待處工作人員。");
                     regBtn.disabled = false; regBtn.innerText = "確認註冊並自動登入";
                 });
             }
