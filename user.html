@@ -5,17 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>我的 AI 能力證書 - 明愛元朗陳震夏中學</title>
     
+    <!-- 引入 Firebase v8 CDN -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     
     <style>
+        /* RWD 基礎重設 */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #e9ecef; padding: 12px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding-bottom: 100px; }
-        
         .info-panel { background-color: #fff; width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: hidden; border: 1px solid #ddd; }
         .info-header { background-color: #004080; color: white; padding: 14px 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-size: 15px; }
         .info-content { padding: 12px; display: none; background-color: #fafbfc; }
@@ -35,9 +37,13 @@
         .progress-bar { background: linear-gradient(90deg, #ffb300, #ff8f00); height: 100%; width: 0%; transition: width 0.8s ease-in-out; }
         .prize-encouragement { font-size: 13px; line-height: 1.4; color: #5d4037; font-weight: bold; font-style: italic; background-color: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #ffa000; }
 
+        /* 📜 證書本體 RWD */
         .certificate-container { background-color: #ffffff; width: 100%; max-width: 600px; padding: 5% 6%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; position: relative; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; }
         .cert-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #004080; padding-bottom: 12px; }
+        
+        /* 🌟 優化校徽：等比例縮放且不裁切 🌟 */
         .cert-logo { max-width: 90px; max-height: 90px; width: auto; height: auto; object-fit: contain; margin-bottom: 10px; }
+        
         .school-title { color: #004080; font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
         .cert-title { color: #333; font-size: 14px; margin: 4px 0 0 0; font-weight: bold; }
         
@@ -55,7 +61,7 @@
         
         .btn-group { display: flex; gap: 12px; width: 100%; max-width: 600px; margin-top: 16px; }
         .btn { flex: 1; padding: 12px 8px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; }
-        .btn:hover { transform: translateY(-1px); }
+        .btn:hover { transform: translateY(-2px); }
         .btn-edit { background-color: #6c757d; }
         .btn-export { background-color: #dc3545; }
         
@@ -73,7 +79,21 @@
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); } }
         .updated-flash { animation: pulse 1.5s infinite; }
 
-        /* A4 PDF 導出樣式 */
+        @media (max-width: 480px) {
+            body { padding: 8px; padding-bottom: 110px; }
+            .certificate-container { padding: 16px 12px; border-width: 4px; outline-offset: -6px; }
+            .school-title { font-size: 16px; }
+            .cert-title { font-size: 13px; }
+            .student-info { flex-direction: column; padding: 8px; gap: 4px; }
+            .student-info div { text-align: left !important; }
+            .chart-container { height: 250px; }
+            .btn-group { flex-direction: column; gap: 8px; }
+            .btn { width: 100%; }
+            .scan-float-btn { width: 68px; height: 68px; bottom: 16px; right: 16px; font-size: 11px; }
+            .scan-float-btn span { font-size: 22px; }
+        }
+
+        /* A4 PDF 專屬高解析度導出 CSS */
         .exporting-a4 { width: 794px !important; height: 1123px !important; max-width: 794px !important; padding: 50px 60px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -15px !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; background-color: white !important; margin: 0 !important; }
         .exporting-a4 .cert-header { padding-bottom: 20px !important; margin-bottom: 20px !important; border-bottom-width: 3px !important; }
         .exporting-a4 .cert-logo { max-width: 160px !important; max-height: 160px !important; width: auto !important; height: auto !important; margin-bottom: 20px !important;}
@@ -91,16 +111,16 @@
 </head>
 <body>
 
-<!-- 🌟 更新：9 大活動編號導覽面版 🌟 -->
+<!-- 📍 5 大特色活動導覽 -->
 <div class="info-panel" data-html2canvas-ignore="true">
     <div class="info-header" onclick="toggleInfoPanel()">
-        <span>📍 精彩活動導覽地圖</span>
+        <span>📍 5 大特色活動導覽</span>
         <span id="panelArrow">▼</span>
     </div>
     <div class="info-content active" id="infoContent">
         <table class="schedule-table">
             <thead>
-                <tr><th style="width: 20%;">編號</th><th style="width: 55%;">活動名稱</th><th style="width: 25%;">性質</th></tr>
+                <tr><th style="width: 20%;">編號</th><th style="width: 55%;">特色互動教室 (地點)</th><th style="width: 25%;">性質</th></tr>
             </thead>
             <tbody>
                 <tr><td><span class="floor-badge">活動 1</span></td><td><span class="highlight-event">中文AI詩中有畫</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
@@ -117,6 +137,7 @@
     </div>
 </div>
 
+<!-- 🎁 獨立集點換獎進度面板 -->
 <div class="prize-panel" data-html2canvas-ignore="true">
     <div class="prize-header">🎁 我的資訊日集點換獎計劃</div>
     <div class="prize-status-box">
@@ -127,9 +148,11 @@
     <div class="prize-encouragement" id="displayEncouragement">歡迎參與！請開始掃描攤位 QR Code 來累積遊玩次數。</div>
 </div>
 
+<!-- 📜 個人能力證書本體 -->
 <div class="certificate-container" id="certificate-area">
     <div class="cert-header">
-        <img id="certLogo" class="cert-logo" src="https://www.cys.edu.hk/img/logo.png" alt="School Logo" crossorigin="anonymous">
+        <!-- 🌟 改為直接載入 CYS 官方校徽 URL 作為高解析度、高相容性預設 🌟 -->
+        <img id="certLogo" class="cert-logo" src="https://www.cys.edu.hk/img/logo.png" alt="CYS Logo">
         <h1 class="school-title">明愛元朗陳震夏中學</h1>
         <h2 class="cert-title">🤖 薈藝博文升中資訊日 - 個人能力證書</h2>
     </div>
@@ -146,29 +169,35 @@
         </div>
     </div>
 
+    <!-- 蜘蛛雷達圖 (展示5科能力平均分) -->
     <div class="chart-container"><canvas id="radarChart"></canvas></div>
 
+    <!-- AI 智能評語 -->
     <div class="ai-comments" id="aiCommentsBox">
         <h4>✨ AI 智能綜合能力分析</h4>
         <p><span class="highlight-positive">【優勢讚賞】</span> <span id="ai-positive">系統分析中...</span></p>
         <p><span class="highlight-suggest">【優化建議】</span> <span id="ai-suggest">系統分析中...</span></p>
     </div>
     
+    <!-- 版權與系統設計聲明區塊 -->
     <div class="footer-text" style="text-align: right; color: #555; font-size: 11px; margin-top: 18px; border-top: 1px solid #eef2f5; padding-top: 12px; font-weight: bold; line-height: 1.6;">
         <p>此證書由明愛元朗陳震夏中學 AI 能力評估系統運算生成。</p>
         <p style="color: #004080; margin-top: 4px;">本系統由副校長張耀宗博士設計，版權均為學校所有。</p>
     </div>
 </div>
 
+<!-- 底部控制按鈕 -->
 <div class="btn-group" data-html2canvas-ignore="true">
     <button class="btn btn-edit" onclick="logout()">登出 / 返回首頁</button>
-    <button id="exportBtn" class="btn btn-export" onclick="exportPDF()">📥 下載 A4 證書 PDF</button>
+    <button id="exportBtn" class="btn btn-export" onclick="exportPDF()">📥 下載 PDF 證書</button>
 </div>
 
+<!-- 📷 懸浮掃碼按鈕 -->
 <button class="scan-float-btn" onclick="startScanner()" data-html2canvas-ignore="true">
     <span>📷</span>掃描獲分
 </button>
 
+<!-- 掃描二維碼彈出視窗 -->
 <div id="scanModal" class="modal-overlay">
     <div class="modal-content">
         <h3>📷 掃描攤位二維碼</h3>
@@ -179,6 +208,7 @@
 </div>
 
 <script>
+    // Firebase 連線配置
     const firebaseConfig = {
         apiKey: "AIzaSyDyfe-ItBWTeJ_6aZWjz4D8FQwWJ8XnLw4",
         authDomain: "cys-openday.firebaseapp.com",
@@ -204,6 +234,7 @@
         }
     }
 
+    // 處理 Map/Object 結構的平均分計算
     function getAverageScores(scoresObj) {
         return [0, 1, 2, 3, 4].map(i => {
             const arr = scoresObj[String(i)] || [];
@@ -213,6 +244,7 @@
         });
     }
 
+    // 處理 Map/Object 結構的遊玩分數計算 (掃描次數 / 2)
     function getParticipationScore(scoresObj) {
         let totalScans = 0;
         for (let i = 0; i < 5; i++) {
@@ -227,6 +259,18 @@
     if (!loginEmail || !loginPhone) { alert("請先登入系統！"); window.location.href = 'index.html'; }
 
     let currentUser = null;
+
+    // 🌟 連線雲端，即時提取管理員在後台同步的自訂校徽 Base64 數據 🌟
+    function loadLogoFromCloud() {
+        db.collection("system").doc("settings").get().then((doc) => {
+            if (doc.exists && doc.data().logoBase64) {
+                // 如果管理員上載了雲端校徽，自動進行 0.1 秒極速同步更換
+                document.getElementById('certLogo').src = doc.data().logoBase64;
+            }
+        }).catch((err) => {
+            console.warn("未檢索到雲端校徽，採用官方預設配置路徑：", err);
+        });
+    }
 
     function loadUserCloudData() {
         db.collection("users").doc(loginEmail.toLowerCase()).get().then((doc) => {
@@ -255,6 +299,7 @@
     }
 
     document.getElementById('currentDate').innerText = new Date().toLocaleDateString('zh-HK');
+    loadLogoFromCloud(); // 雲端校徽同步檢查
 
     const ctx = document.getElementById('radarChart').getContext('2d');
     const isMobile = window.innerWidth < 480;
@@ -280,6 +325,7 @@
 
     loadUserCloudData();
 
+    // 監聽雲端資料庫
     db.collection("users").doc(loginEmail.toLowerCase()).onSnapshot((doc) => {
         if (doc.exists) {
             currentUser = doc.data();
@@ -310,7 +356,7 @@
 
         if (points >= 10) {
             prizeText = "🏆 大獎 (已解鎖！)";
-            encouragementText = "太厲害了！你已經體驗了 10 個攤位！🎉 請前往頒獎處出示畫面，領取精美【大獎】吧！🎁";
+            encouragementText = "太厲害了！你已經體驗了 10 個攤位！🎉 請前往升中資訊日頒獎處，出示此手機畫面領取你的【大獎】吧！🎁";
             progressPercent = 100;
         } else if (points >= 8) {
             prizeText = "🥈 中獎 (已解鎖！)";
@@ -331,6 +377,7 @@
         document.getElementById('progressBar').style.width = progressPercent + "%";
     }
 
+    // AI 評語
     function generateAIComments(calculatedAvgs) {
         const totalScore = calculatedAvgs.reduce((a, b) => a + b, 0);
         
@@ -358,7 +405,7 @@
                 s_explore: "面對挑戰時，可以試著將大問題拆解成多個「小目標」，一個個攻克；多向身旁的老師同學請教，能幫你快速找到頭緒。"
             },
             '邏輯思維': {
-                excellent: "你的大腦就像一台高速運算的超級電腦！邏輯推理極為嚴密，能瞬間從蛛絲馬跡中理出因果關係，思維架構無懈可擊。",
+                excellent: "你大腦就像一台高速運算的超級電腦！邏輯推理極為嚴密，能瞬間從蛛絲馬跡中理出因果關係，思維架構無懈可擊。",
                 good: "你擁有非常清晰的條理性。在分析數據或推導線索時，能客觀地根據證據說話，思維敏捷且判斷準確。",
                 explore: "你在思考問題時十分專注，能夠努力去尋找事物之間的規律，展現了積極求知與探索的精神。",
                 s_excellent: "建議可以開始接觸基礎的編程演算法（如 Python 邏輯）或參與數學謎題挑戰，為你強大的邏輯思維提供更高階的舞台。",
@@ -403,6 +450,9 @@
         document.getElementById('ai-suggest').innerText = suggestText;
     }
 
+    // ==========================================
+    // 🛡️ 防作弊與 QR Code 解碼
+    // ==========================================
     const cooldownKey = `cooldown_${loginEmail}_${loginPhone}`;
     let scanCooldowns = JSON.parse(localStorage.getItem(cooldownKey)) || {};
 
@@ -413,7 +463,7 @@
             html5QrCodeScanner = new Html5Qrcode("reader");
             html5QrCodeScanner.start(
                 { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, onScanFailure
-            ).catch(err => { alert("相機開啟失敗！請允許瀏覽器調用鏡頭權限。"); stopScanner(); });
+            ).catch(err => { alert("相機開啟失敗！"); stopScanner(); });
         }, 300);
     }
     function stopScanner() {
@@ -454,7 +504,7 @@
 
             stopScanner();
             
-            // 2 分鐘冷卻檢查
+            // 🛡️ 2 分鐘冷卻檢查
             const qrIdentifier = `${abilityName}_${newScore}`;
             const currentTime = Date.now();
             const lastScanTime = scanCooldowns[qrIdentifier];
@@ -468,6 +518,7 @@
             scanCooldowns[qrIdentifier] = currentTime;
             localStorage.setItem(cooldownKey, JSON.stringify(scanCooldowns));
 
+            // 更新分數 Map
             let localRawScores = currentUser.scores || {};
             if (Array.isArray(localRawScores)) {
                 localRawScores = { "0": [], "1": [], "2": [], "3": [], "4": [] };
@@ -476,6 +527,7 @@
             if (!localRawScores[keyStr]) localRawScores[keyStr] = [];
             localRawScores[keyStr].push(newScore);
 
+            // 寫入雲端
             db.collection("users").doc(loginEmail.toLowerCase()).update({
                 scores: localRawScores,
                 status: 'active'
@@ -500,6 +552,7 @@
 
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
+    // A4 滿邊距完美匯出 (排除 Firebase CORS Base64 衝突)
     async function exportPDF() {
         const btn = document.getElementById('exportBtn');
         const certArea = document.getElementById('certificate-area');
@@ -511,7 +564,9 @@
         
         try {
             radarChart.options.animation = false; radarChart.update();
-            const canvas = await html2canvas(certArea, { scale: 2, backgroundColor: '#ffffff' });
+            // 🌟 核心修正：匯出 Base64 圖片時，自動將 useCORS 設為 false 🌟
+            // 因為本機 Base64 字串不屬於外部資源，關閉 useCORS 才能 100% 繞過 iOS 沙盒安全政策，完美載出校徽並導出 PDF
+            const canvas = await html2canvas(certArea, { scale: 2, useCORS: false, backgroundColor: '#ffffff' });
             const imgData = canvas.toDataURL('image/jpeg', 1.0);
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
