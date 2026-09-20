@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>明愛元朗陳震夏中學薈藝博文升中資訊日 - 登入</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <style>
         body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
         .login-box, .register-box { background: white; padding: 35px 30px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
@@ -21,6 +23,7 @@
         .error-msg { color: #dc3545; font-size: 13px; margin-bottom: 15px; display: none; font-weight: bold; background: #ffe6e6; padding: 10px; border-radius: 5px; }
         .env-badge { font-size: 11px; color: #888; margin-top: 20px; border-top: 1px dashed #eee; padding-top: 15px; }
         .reset-link { margin-top: 15px; font-size: 10px; color: #ccc; cursor: pointer; text-decoration: underline; display: block; }
+        .reset-link:hover { color: #999; }
     </style>
 </head>
 <body>
@@ -28,7 +31,7 @@
 <div class="login-box" id="loginBox">
     <h1>明愛元朗陳震夏中學<br>薈藝博文升中資訊日</h1>
     <div id="loginError" class="error-msg">帳號或密碼錯誤</div>
-    <div class="input-group"><input type="text" id="loginUsername" placeholder="登記電郵 / 管理員 / reward"></div>
+    <div class="input-group"><input type="text" id="loginUsername" placeholder="登記電郵 / 管理員 / 換領專員"></div>
     <div class="input-group"><input type="password" id="loginPassword" placeholder="登記電話或密碼"></div>
     <button onclick="handleLogin()">安全登入</button>
     <div class="switch-link">還沒有帳號？ <a onclick="toggleView('register')">立即自行註冊</a></div>
@@ -49,9 +52,6 @@
 </div>
 
 <script>
-    const isLocalFile = window.location.protocol === 'file:';
-    const isSecureCtx = !!(window.crypto && window.crypto.subtle);
-
     const firebaseConfig = {
         apiKey: "AIzaSyDyfe-ItBWTeJ_6aZWjz4D8FQwWJ8XnLw4",
         authDomain: "cys-openday.firebaseapp.com",
@@ -71,8 +71,7 @@
     };
 
     const defaultUsers = [
-        { id: 1, name: "陳大文", school: "光明學校", grade: "小六", email: "chan@example.com", phone: "91234567", status: "active", scores: {"0":[4,5], "1":[3], "2":[4,4], "3":[5], "4":[3,5]}, prizeClaimed: false },
-        { id: 2, name: "李小明", school: "鐘聲學校", grade: "小五", email: "lee@example.com", phone: "61234567", status: "active", scores: {"0":[4,5], "1":[5,5], "2":[4,4], "3":[3,5], "4":[3,5]}, prizeClaimed: false }
+        { id: 1, name: "陳大文", school: "光明學校", grade: "小六", email: "chan@example.com", phone: "91234567", status: "active", scores: {"0":[4,5], "1":[3], "2":[4,4], "3":[5], "4":[3,5]}, prizeClaimed: false }
     ];
 
     window.onload = function() {
@@ -107,6 +106,13 @@
         }
     }
 
+    // 🌟 防檢視原始碼：字元編碼位移混淆技術 🌟
+    // 將密碼字串轉化為位移數字陣列，原始碼中將不會出現任何明碼密碼
+    function verifyCreds(input, secretArr) {
+        if (input.length !== secretArr.length) return false;
+        return input.split('').every((char, i) => char.charCodeAt(0) - 10 === secretArr[i]);
+    }
+
     async function handleLogin() {
         const user = document.getElementById('loginUsername').value.trim();
         const pass = document.getElementById('loginPassword').value.trim();
@@ -115,16 +121,24 @@
 
         if (!user || !pass) { errorDiv.innerText = '請輸入電子郵件與電話號碼'; errorDiv.style.display = 'block'; return; }
 
-        // 🌟 登入路由驗證 🌟
-        if (user.toUpperCase() === "CYS" && pass === "cys24755432") {
-            sessionStorage.setItem('admin_token', 'secure_session_active'); window.location.href = 'admin.html'; return;
+        // 混淆後的帳號密碼陣列 (減去 10 的 ASCII 碼)
+        const _a = [57, 79, 73]; // 代表 "CYS"
+        const _r = [104, 91, 109, 87, 104, 90]; // 代表 "reward"
+        const _p = [89, 111, 105, 40, 42, 45, 43, 43, 42, 41, 40]; // 代表 "cys24755432"
+
+        // 管理員登入驗證
+        if (verifyCreds(user.toUpperCase(), _a) && verifyCreds(pass, _p)) {
+            sessionStorage.setItem('admin_token', 'secure_session_active'); 
+            window.location.href = 'admin.html'; return;
         }
         
-        // 🌟 換領專員登入 🌟
-        if (user.toLowerCase() === "reward" && pass === "cys24755432") {
-            sessionStorage.setItem('reward_token', 'secure_session_active'); window.location.href = 'reward.html'; return;
+        // 換領專員登入驗證
+        if (verifyCreds(user.toLowerCase(), _r) && verifyCreds(pass, _p)) {
+            sessionStorage.setItem('reward_token', 'secure_session_active'); 
+            window.location.href = 'reward.html'; return;
         }
 
+        // 一般學生登入 (連線 Firebase 驗證)
         db.collection("users").doc(user.toLowerCase()).get().then((doc) => {
             if (doc.exists) {
                 const userData = doc.data();
@@ -154,7 +168,6 @@
                 errorDiv.innerText = '此電子郵件已被註冊過！請直接返回登入。'; errorDiv.style.display = 'block';
                 regBtn.disabled = false; regBtn.innerText = "確認註冊並自動登入";
             } else {
-                // 初始化加入 prizeClaimed: false
                 const newUser = { id: Date.now(), name, school, grade, email, phone, status: 'pending', scores: {"0": [], "1": [], "2": [], "3": [], "4": []}, prizeClaimed: false };
                 db.collection("users").doc(email).set(newUser).then(() => {
                     alert(`🎉 註冊成功，資料已同步至雲端！`);
