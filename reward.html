@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>職員專用 - 獎品換領系統</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #f8f9fa; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .header { background-color: #e65100; color: white; width: 100%; max-width: 500px; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
+        .header h1 { margin: 0; font-size: 18px; }
+        .btn-logout { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        
+        .scanner-container { width: 100%; max-width: 500px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center; margin-bottom: 20px; }
+        #reader { width: 100%; max-width: 350px; margin: 0 auto 15px auto; border-radius: 10px; overflow: hidden; border: 2px solid #ddd; }
+        
+        .result-panel { width: 100%; max-width: 500px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: none; }
+        .result-panel h3 { margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .student-info p { margin: 8px 0; font-size: 15px; color: #555; }
+        .student-info strong { color: #000; font-size: 16px; }
+        
+        .status-box { margin-top: 15px; padding: 15px; border-radius: 8px; text-align: center; }
+        .status-eligible { background-color: #e8f5e9; border: 2px solid #4caf50; }
+        .status-claimed { background-color: #ffebee; border: 2px solid #f44336; }
+        .status-not-eligible { background-color: #fff3cd; border: 2px solid #ffc107; }
+        
+        .prize-title { font-size: 24px; font-weight: bold; margin: 10px 0; }
+        .claim-btn { width: 100%; padding: 15px; background-color: #4caf50; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 6px rgba(76,175,80,0.3); transition: 0.2s; }
+        .claim-btn:hover { background-color: #388e3c; }
+        .claim-btn:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
+        
+        .scan-again-btn { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🎁 換領專員掃描系統</h1>
+        <button class="btn-logout" onclick="logout()">登出</button>
+    </div>
+
+    <div class="scanner-container" id="scannerSection">
+        <p style="margin-bottom: 15px; font-size: 14px; color: #666; font-weight: bold;">請對準學生手機上的「換獎專屬 QR Code」</p>
+        <div id="reader"></div>
+    </div>
+
+    <div class="result-panel" id="resultSection">
+        <h3>🔍 學生資格檢驗</h3>
+        <div class="student-info">
+            <p>姓名：<strong id="resName">---</strong></p>
+            <p>學校：<strong id="resSchool">---</strong></p>
+            <p>已體驗攤位數：<strong id="resScore" style="color: #007bff; font-size: 18px;">0</strong> 攤</p>
+        </div>
+        
+        <div id="statusBox" class="status-box">
+            <p id="statusDesc" style="margin: 0; font-size: 14px;"></p>
+            <div id="prizeTitle" class="prize-title"></div>
+        </div>
+
+        <button id="claimActionBtn" class="claim-btn" onclick="confirmClaim()">✅ 確認換領 (只限一次)</button>
+        <button class="scan-again-btn" onclick="resetScanner()">📷 掃描下一位</button>
+    </div>
+
+<script>
+    if (sessionStorage.getItem('reward_token') !== 'secure_session_active') {
+        alert("請先使用換領專員帳號登入！"); window.location.href = 'index.html';
+    }
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDyfe-ItBWTeJ_6aZWjz4D8FQwWJ8XnLw4",
+        authDomain: "cys-openday.firebaseapp.com",
+        projectId: "cys-openday",
+        storageBucket: "cys-openday.firebasestorage.app",
+        messagingSenderId: "332588640232",
+        appId: "1:332588640232:web:c17dd8d7d443d2d825265d"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let html5QrCodeScanner = null;
+    let scannedUserEmail = "";
+
+    function getParticipationScore(scoresObj) {
+        let totalScans = 0;
+        for (let i = 0; i < 5; i++) {
+            const arr = scoresObj[String(i)] || [];
+            totalScans += arr.length;
+        }
+        return Math.floor(totalScans / 2);
+    }
+
+    function initScanner() {
+        document.getElementById('scannerSection').style.display = 'block';
+        document.getElementById('resultSection').style.display = 'none';
+        html5QrCodeScanner = new Html5Qrcode("reader");
+        html5QrCodeScanner.start(
+            { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, (e)=>{}
+        ).catch(err => { alert("相機開啟失敗，請允許相機權限！"); });
+    }
+
+    function onScanSuccess(decodedText) {
+        try {
+            const data = JSON.parse(decodedText);
+            if (data.action === "redeem" && data.email) {
+                html5QrCodeScanner.stop().then(() => {
+                    checkUserEligibility(data.email);
+                });
+            } else {
+                alert("⚠️ 這不是有效的換獎專屬 QR Code！");
+            }
+        } catch(e) {
+            alert("⚠️ 格式錯誤！請掃描學生的「換獎專屬 QR Code」。");
+        }
+    }
+
+    function checkUserEligibility(email) {
+        scannedUserEmail = email;
+        document.getElementById('scannerSection').style.display = 'none';
+        document.getElementById('resultSection').style.display = 'block';
+        document.getElementById('claimActionBtn').style.display = 'none';
+        
+        document.getElementById('resName').innerText = "連線查詢中...";
+        document.getElementById('statusBox').className = "status-box";
+        document.getElementById('statusDesc').innerText = "正在檢查雲端數據...";
+        document.getElementById('prizeTitle').innerText = "";
+
+        db.collection("users").doc(email).get().then((doc) => {
+            if (doc.exists) {
+                const user = doc.data();
+                document.getElementById('resName').innerText = user.name;
+                document.getElementById('resSchool').innerText = user.school;
+                
+                const points = getParticipationScore(user.scores || {});
+                document.getElementById('resScore').innerText = points;
+
+                const statusBox = document.getElementById('statusBox');
+                const title = document.getElementById('prizeTitle');
+                const desc = document.getElementById('statusDesc');
+                const claimBtn = document.getElementById('claimActionBtn');
+
+                if (user.prizeClaimed) {
+                    // 已換領過
+                    statusBox.className = "status-box status-claimed";
+                    desc.innerText = "⛔ 注意：此學生已經換領過獎品";
+                    desc.style.color = "#d32f2f";
+                    title.innerText = "已換領";
+                    title.style.color = "#d32f2f";
+                } else {
+                    // 尚未換領，判斷資格
+                    if (points >= 10) {
+                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 符合最高獎勵資格！可換領："; title.innerText = "🏆 大獎"; title.style.color = "#4caf50";
+                        claimBtn.style.display = "block";
+                    } else if (points >= 8) {
+                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 符合獎勵資格！可換領："; title.innerText = "🥈 中獎"; title.style.color = "#4caf50";
+                        claimBtn.style.display = "block";
+                    } else if (points >= 5) {
+                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 符合獎勵資格！可換領："; title.innerText = "🥉 細獎"; title.style.color = "#4caf50";
+                        claimBtn.style.display = "block";
+                    } else {
+                        statusBox.className = "status-box status-not-eligible"; desc.innerText = "尚未達到換獎門檻 (最少需 5 攤)"; desc.style.color = "#856404";
+                        title.innerText = "資格未符"; title.style.color = "#856404";
+                    }
+                }
+            } else {
+                alert("找不到此學生資料！"); resetScanner();
+            }
+        }).catch(err => { alert("連線失敗：" + err.message); resetScanner(); });
+    }
+
+    function confirmClaim() {
+        if (!confirm("確定要將此學生標記為「已換領」嗎？操作後將無法再次領獎。")) return;
+        
+        const claimBtn = document.getElementById('claimActionBtn');
+        claimBtn.disabled = true; claimBtn.innerText = "寫入雲端中...";
+
+        db.collection("users").doc(scannedUserEmail).update({
+            prizeClaimed: true
+        }).then(() => {
+            alert("✅ 換領成功！資料已同步鎖定。");
+            document.getElementById('statusBox').className = "status-box status-claimed";
+            document.getElementById('statusDesc').innerText = "⛔ 此學生已經換領過獎品";
+            document.getElementById('statusDesc').style.color = "#d32f2f";
+            document.getElementById('prizeTitle').innerText = "已換領";
+            document.getElementById('prizeTitle').style.color = "#d32f2f";
+            claimBtn.style.display = "none";
+            claimBtn.disabled = false; claimBtn.innerText = "✅ 確認換領 (只限一次)";
+        }).catch(err => {
+            alert("更新失敗：" + err.message);
+            claimBtn.disabled = false; claimBtn.innerText = "✅ 確認換領 (只限一次)";
+        });
+    }
+
+    function resetScanner() {
+        if(html5QrCodeScanner) { html5QrCodeScanner.stop().catch(e=>{}); }
+        setTimeout(initScanner, 300);
+    }
+
+    function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
+
+    window.onload = initScanner;
+</script>
+</body>
+</html>

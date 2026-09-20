@@ -5,20 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>我的 AI 能力證書 - 明愛元朗陳震夏中學</title>
     
-    <!-- 引入 Firebase v8 CDN -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- 引入產生個人專屬 QR Code 的套件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     
     <style>
-        /* RWD 基礎重設 */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #e9ecef; padding: 12px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding-bottom: 100px; }
-        
         .info-panel { background-color: #fff; width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: hidden; border: 1px solid #ddd; }
         .info-header { background-color: #004080; color: white; padding: 14px 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-size: 15px; }
         .info-content { padding: 12px; display: none; background-color: #fafbfc; }
@@ -29,27 +27,27 @@
         .floor-badge { background-color: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; white-space: nowrap; }
         .highlight-event { color: #004080; font-weight: bold; }
         
-        .prize-panel { background-color: #fff8e1; border: 2px solid #ffe082; width: 100%; max-width: 600px; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .prize-panel { background-color: #fff8e1; border: 2px solid #ffe082; width: 100%; max-width: 600px; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); text-align: center; }
         .prize-header { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: #b78103; border-bottom: 1px solid #ffd54f; padding-bottom: 8px; margin-bottom: 12px; }
         .prize-status-box { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
         .points-badge { background-color: #ff9800; color: white; border-radius: 20px; padding: 4px 10px; font-weight: bold; font-size: 14px; }
         .prize-tier { font-weight: bold; font-size: 18px; color: #e65100; text-shadow: 1px 1px 1px rgba(0,0,0,0.05); }
         .progress-bar-container { background-color: #e0e0e0; height: 10px; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
         .progress-bar { background: linear-gradient(90deg, #ffb300, #ff8f00); height: 100%; width: 0%; transition: width 0.8s ease-in-out; }
-        .prize-encouragement { font-size: 13px; line-height: 1.4; color: #5d4037; font-weight: bold; font-style: italic; background-color: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #ffa000; }
+        .prize-encouragement { font-size: 13px; line-height: 1.4; color: #5d4037; font-weight: bold; font-style: italic; background-color: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #ffa000; text-align: left; margin-bottom: 12px; }
+        
+        .btn-redeem { background-color: #e65100; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; box-shadow: 0 4px 6px rgba(230,81,0,0.3); animation: pulse 2s infinite; }
+        .btn-redeem:disabled { background-color: #aaa; box-shadow: none; animation: none; cursor: not-allowed; }
 
         .certificate-container { background-color: #ffffff; width: 100%; max-width: 600px; padding: 5% 6%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; position: relative; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; }
         .cert-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #004080; padding-bottom: 12px; }
         .cert-logo { max-width: 90px; max-height: 90px; width: auto; height: auto; object-fit: contain; margin-bottom: 10px; }
         .school-title { color: #004080; font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
         .cert-title { color: #333; font-size: 14px; margin: 4px 0 0 0; font-weight: bold; }
-        
         .student-info { display: flex; flex-direction: row; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; gap: 10px; }
         .student-info p { margin: 3px 0; color: #555; font-size: 12px; }
         .student-info strong { color: #333; font-size: 14px; }
-        
         .chart-container { position: relative; width: 100%; height: 280px; margin-bottom: 16px; }
-        
         .ai-comments { background: #ebf5ff; border-left: 5px solid #007bff; padding: 15px; border-radius: 6px; margin-bottom: 16px; }
         .ai-comments h4 { margin-top: 0; color: #004080; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
         .ai-comments p { margin: 6px 0; font-size: 13px; line-height: 1.5; color: #444; }
@@ -71,42 +69,11 @@
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-sizing: border-box; }
         .modal-content h3 { margin-top: 0; color: #004080; font-size: 16px; margin-bottom: 8px; }
         #reader { width: 100%; max-width: 320px; margin: auto; border: 2px solid #ccc; border-radius: 8px; overflow: hidden; background: #000; }
-        .btn-close-scan { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; min-height: 40px; }
+        .btn-close-scan { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; min-height: 40px; width: 100%; }
 
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); } }
-        .updated-flash { animation: pulse 1.5s infinite; }
-
-        @media (max-width: 480px) {
-            body { padding: 8px; padding-bottom: 110px; }
-            .certificate-container { padding: 16px 12px; border-width: 4px; outline-offset: -6px; }
-            .school-title { font-size: 16px; }
-            .cert-title { font-size: 13px; }
-            .student-info { flex-direction: column; padding: 8px; gap: 4px; }
-            .student-info div { text-align: left !important; }
-            .chart-container { height: 250px; }
-            .btn-group { flex-direction: column; gap: 8px; }
-            .btn { width: 100%; }
-            .scan-float-btn { width: 68px; height: 68px; bottom: 16px; right: 16px; font-size: 11px; }
-            .scan-float-btn span { font-size: 22px; }
-        }
-
-        /* 🌟 終極修復版：A4 PDF 高解析度導出排版，動態高度不裁切 🌟 */
-        .exporting-a4 { 
-            width: 794px !important; 
-            min-height: 1123px !important; /* 確保有 A4 的最低高度 */
-            height: auto !important; /* 讓內容可以自然撐開，絕不裁斷 */
-            max-width: none !important; 
-            padding: 40px 50px !important; 
-            border-width: 10px !important; 
-            outline-width: 3px !important; 
-            outline-offset: -12px !important; 
-            display: flex !important; 
-            flex-direction: column !important; 
-            justify-content: flex-start !important; 
-            background-color: white !important; 
-            margin: 0 !important; 
-        }
-        /* 調整元素間距，讓它完美放入一頁 A4 比例中 */
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(230, 81, 0, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(230, 81, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 81, 0, 0); } }
+        
+        .exporting-a4 { width: 794px !important; height: auto !important; min-height: 1123px !important; max-width: none !important; padding: 40px 50px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -12px !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; background-color: white !important; margin: 0 !important; }
         .exporting-a4 .cert-header { padding-bottom: 15px !important; margin-bottom: 15px !important; border-bottom-width: 3px !important; }
         .exporting-a4 .cert-logo { max-width: 110px !important; max-height: 110px !important; margin-bottom: 10px !important;}
         .exporting-a4 .school-title { font-size: 30px !important; margin-bottom: 8px !important; }
@@ -123,7 +90,6 @@
 </head>
 <body>
 
-<!-- 📍 頂部展覽活動地圖資訊面版 -->
 <div class="info-panel" data-html2canvas-ignore="true">
     <div class="info-header" onclick="toggleInfoPanel()">
         <span>📍 5 大特色活動導覽</span>
@@ -131,9 +97,7 @@
     </div>
     <div class="info-content active" id="infoContent">
         <table class="schedule-table">
-            <thead>
-                <tr><th style="width: 20%;">編號</th><th style="width: 55%;">特色互動教室 (地點)</th><th style="width: 25%;">性質</th></tr>
-            </thead>
+            <thead><tr><th style="width: 20%;">編號</th><th style="width: 55%;">特色互動教室 (地點)</th><th style="width: 25%;">性質</th></tr></thead>
             <tbody>
                 <tr><td><span class="floor-badge">活動 1</span></td><td><span class="highlight-event">中文AI詩中有畫</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
                 <tr><td><span class="floor-badge">活動 2</span></td><td><span class="highlight-event">英文AI Voice-over</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
@@ -149,7 +113,6 @@
     </div>
 </div>
 
-<!-- 🎁 獨立集點換獎進度面板 -->
 <div class="prize-panel" data-html2canvas-ignore="true">
     <div class="prize-header">🎁 我的資訊日集點換獎計劃</div>
     <div class="prize-status-box">
@@ -158,9 +121,20 @@
     </div>
     <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
     <div class="prize-encouragement" id="displayEncouragement">歡迎參與！請開始掃描攤位 QR Code 來累積遊玩次數。</div>
+    <!-- 🌟 新增專屬換領 QR Code 按鈕 🌟 -->
+    <button class="btn-redeem" id="btnShowRedeem" onclick="showRedeemQR()" style="display: none;">🎫 出示換獎專屬 QR Code</button>
 </div>
 
-<!-- 📜 個人能力證書本體 -->
+<!-- 專屬換領 QR Code Modal -->
+<div id="redeemModal" class="modal-overlay" data-html2canvas-ignore="true">
+    <div class="modal-content">
+        <h3>🎫 換獎專屬 QR Code</h3>
+        <p style="color: #666; font-size: 13px; margin-bottom: 15px;">請向禮物部職員出示此二維碼進行換領。<br><span style="color:#d32f2f; font-weight:bold;">注意：獎品只限換領一次，換領後無法撤銷。</span></p>
+        <canvas id="redeemCanvas" style="border: 1px solid #ddd; padding: 10px; border-radius: 10px; background: white; margin-bottom: 15px;"></canvas>
+        <button class="btn-close-scan" onclick="document.getElementById('redeemModal').classList.remove('active')">關閉</button>
+    </div>
+</div>
+
 <div class="certificate-container" id="certificate-area">
     <div class="cert-header">
         <img id="certLogo" class="cert-logo" src="https://www.cys.edu.hk/img/logo.png" alt="School Logo" crossorigin="anonymous">
@@ -213,7 +187,6 @@
 </div>
 
 <script>
-    // 🌟 Firebase 配置
     const firebaseConfig = {
         apiKey: "AIzaSyDyfe-ItBWTeJ_6aZWjz4D8FQwWJ8XnLw4",
         authDomain: "cys-openday.firebaseapp.com",
@@ -239,7 +212,6 @@
         }
     }
 
-    // 處理 Map/Object 結構的平均分計算
     function getAverageScores(scoresObj) {
         return [0, 1, 2, 3, 4].map(i => {
             const arr = scoresObj[String(i)] || [];
@@ -249,7 +221,6 @@
         });
     }
 
-    // 處理 Map/Object 結構的遊玩分數計算 (掃描次數 / 2)
     function getParticipationScore(scoresObj) {
         let totalScans = 0;
         for (let i = 0; i < 5; i++) {
@@ -285,15 +256,14 @@
                 radarChart.data.datasets[0].data = avgScores;
                 radarChart.update();
 
-                updatePrizeSystem(rawScores);
+                updatePrizeSystem(rawScores, currentUser.prizeClaimed);
                 generateAIComments(avgScores);
             }
         });
     }
 
     document.getElementById('currentDate').innerText = new Date().toLocaleDateString('zh-HK');
-    
-    // 初始化雷達圖
+
     const ctx = document.getElementById('radarChart').getContext('2d');
     const isMobile = window.innerWidth < 480;
     radarChart = new Chart(ctx, {
@@ -318,7 +288,7 @@
 
     loadUserCloudData();
 
-    // 監聽雲端資料庫
+    // 監聽雲端資料庫 (包含獎品換領狀態)
     db.collection("users").doc(loginEmail.toLowerCase()).onSnapshot((doc) => {
         if (doc.exists) {
             currentUser = doc.data();
@@ -330,39 +300,56 @@
 
             radarChart.data.datasets[0].data = avgScores;
             radarChart.update();
-            updatePrizeSystem(rawScores);
+            updatePrizeSystem(rawScores, currentUser.prizeClaimed);
             generateAIComments(avgScores);
-
-            const box = document.getElementById('aiCommentsBox');
-            box.classList.add('updated-flash');
-            setTimeout(() => { box.classList.remove('updated-flash'); }, 3000);
         }
     });
 
-    function updatePrizeSystem(scores) {
+    // 🌟 獎品進度系統 (連動換領狀態) 🌟
+    function updatePrizeSystem(scores, isClaimed) {
         const points = getParticipationScore(scores); 
         document.getElementById('displayPoints').innerText = points;
 
         let prizeText = "❌ 尚未獲獎";
         let encouragementText = "";
         let progressPercent = 0;
+        let showRedeemBtn = false;
 
         if (points >= 10) {
             prizeText = "🏆 大獎 (已解鎖！)";
-            encouragementText = "太厲害了！你已經體驗了 10 個攤位！🎉 請前往頒獎處出示畫面，領取精美【大獎】吧！🎁";
-            progressPercent = 100;
+            encouragementText = "太厲害了！你已經體驗了 10 個攤位！🎉 請點擊下方按鈕出示 QR Code 領取精美【大獎】吧！🎁";
+            progressPercent = 100; showRedeemBtn = true;
         } else if (points >= 8) {
             prizeText = "🥈 中獎 (已解鎖！)";
-            encouragementText = "超棒的！再多挑戰 " + (10 - points) + " 個攤位，就能把終極【大獎】抱回家囉！加油！🔥";
-            progressPercent = (points / 10) * 100;
+            encouragementText = "超棒的！你可以點擊按鈕換領【中獎】，或再多挑戰 " + (10 - points) + " 個攤位，把終極【大獎】抱回家囉！🔥";
+            progressPercent = (points / 10) * 100; showRedeemBtn = true;
         } else if (points >= 5) {
             prizeText = "🥉 細獎 (已解鎖！)";
-            encouragementText = "幹得好！再體驗 " + (8 - points) + " 個學科特色活動，即可升級為【中獎】！✨";
-            progressPercent = (points / 10) * 100;
+            encouragementText = "幹得好！你可以點擊按鈕換領【細獎】，或再體驗 " + (8 - points) + " 個學科特色活動，升級為【中獎】！✨";
+            progressPercent = (points / 10) * 100; showRedeemBtn = true;
         } else {
             prizeText = "❌ 努力挑戰中";
             encouragementText = "歡迎！只要挑戰 " + (5 - points) + " 個互動教室，即可解鎖首階段【細獎】！出發吧！🚀";
-            progressPercent = (points / 10) * 100;
+            progressPercent = (points / 10) * 100; showRedeemBtn = false;
+        }
+
+        // 🌟 判斷是否已被職員換領 🌟
+        const btnRedeem = document.getElementById('btnShowRedeem');
+        if (isClaimed) {
+            prizeText = "✅ 獎品已換領";
+            encouragementText = "您已成功換領資訊日紀念獎品，感謝您的參與！請繼續體驗其他攤位，並在離開前匯出你的專屬 A4 證書留念。";
+            progressPercent = 100;
+            btnRedeem.style.display = "block";
+            btnRedeem.disabled = true;
+            btnRedeem.style.backgroundColor = "#28a745";
+            btnRedeem.innerText = "✅ 獎品已由職員核銷換領";
+            document.getElementById('progressBar').style.background = "#28a745";
+        } else {
+            btnRedeem.style.display = showRedeemBtn ? "block" : "none";
+            btnRedeem.disabled = false;
+            btnRedeem.style.backgroundColor = "#e65100";
+            btnRedeem.innerText = "🎫 出示換獎專屬 QR Code";
+            document.getElementById('progressBar').style.background = "linear-gradient(90deg, #ffb300, #ff8f00)";
         }
 
         document.getElementById('displayPrize').innerText = prizeText;
@@ -370,7 +357,14 @@
         document.getElementById('progressBar').style.width = progressPercent + "%";
     }
 
-    // AI 評語
+    // 🌟 產生換領專用的唯一身份 QR Code 🌟
+    function showRedeemQR() {
+        if (!currentUser) return;
+        const redeemData = JSON.stringify({ action: "redeem", email: currentUser.email });
+        new QRious({ element: document.getElementById('redeemCanvas'), value: redeemData, size: 220, level: 'H' });
+        document.getElementById('redeemModal').classList.add('active');
+    }
+
     function generateAIComments(calculatedAvgs) {
         const totalScore = calculatedAvgs.reduce((a, b) => a + b, 0);
         
@@ -443,9 +437,6 @@
         document.getElementById('ai-suggest').innerText = suggestText;
     }
 
-    // ==========================================
-    // 🛡️ 防作弊與 QR Code 解碼
-    // ==========================================
     const cooldownKey = `cooldown_${loginEmail}_${loginPhone}`;
     let scanCooldowns = JSON.parse(localStorage.getItem(cooldownKey)) || {};
 
@@ -497,7 +488,7 @@
 
             stopScanner();
             
-            // 🛡️ 2 分鐘冷卻檢查
+            // 2 分鐘冷卻檢查
             const qrIdentifier = `${abilityName}_${newScore}`;
             const currentTime = Date.now();
             const lastScanTime = scanCooldowns[qrIdentifier];
@@ -511,7 +502,6 @@
             scanCooldowns[qrIdentifier] = currentTime;
             localStorage.setItem(cooldownKey, JSON.stringify(scanCooldowns));
 
-            // 更新分數 Map
             let localRawScores = currentUser.scores || {};
             if (Array.isArray(localRawScores)) {
                 localRawScores = { "0": [], "1": [], "2": [], "3": [], "4": [] };
@@ -545,67 +535,42 @@
 
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
-    // 🌟 終極修復版：完美無裁切縮放 A4 PDF 導出 🌟
+    // 🌟 自動放大防裁切，完美生成 A4 證書 PDF 🌟
     async function exportPDF() {
         const btn = document.getElementById('exportBtn');
         const certArea = document.getElementById('certificate-area');
         btn.disabled = true; btn.innerText = '⏳ 正在生成 A4 證書...';
         
-        // 將視窗強制移至最頂，防止手機捲動導致 html2canvas 裁切底部
-        window.scrollTo(0, 0);
-        
+        window.scrollTo(0, 0); // 強制移至最頂端，防止 html2canvas 底部裁切
         certArea.classList.add('exporting-a4');
         radarChart.resize();
         
-        // 給予 DOM 與 Chart.js 充足時間重繪大尺寸
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 600)); // 等待圖表重繪
         
         try {
-            radarChart.options.animation = false; 
-            radarChart.update();
-            
-            // 啟用足夠的視窗空間擷取
-            const canvas = await html2canvas(certArea, { 
-                scale: 2, 
-                useCORS: true, 
-                backgroundColor: '#ffffff',
-                windowWidth: 800,
-                scrollY: 0,
-                scrollX: 0
-            });
-            
+            radarChart.options.animation = false; radarChart.update();
+            const canvas = await html2canvas(certArea, { scale: 2, backgroundColor: '#ffffff', windowWidth: 800, scrollY: 0, scrollX: 0 });
             const imgData = canvas.toDataURL('image/jpeg', 1.0);
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
             
-            const pdfWidth = 210; // A4 寬度 (mm)
-            const pdfHeight = 297; // A4 高度 (mm)
-            
-            // 精準等比縮放，保證 100% 容納於一頁
+            const pdfWidth = 210; const pdfHeight = 297;
             let imgProps = pdf.getImageProperties(imgData);
-            let finalWidth = pdfWidth;
-            let finalHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            let finalWidth = pdfWidth; let finalHeight = (imgProps.height * pdfWidth) / imgProps.width;
             
             if (finalHeight > pdfHeight) {
                 finalHeight = pdfHeight;
                 finalWidth = (imgProps.width * pdfHeight) / imgProps.height;
             }
             
-            // 水平/垂直置中放入
-            const marginX = (pdfWidth - finalWidth) / 2;
-            const marginY = (pdfHeight - finalHeight) / 2;
-
+            const marginX = (pdfWidth - finalWidth) / 2; const marginY = (pdfHeight - finalHeight) / 2;
             pdf.addImage(imgData, 'JPEG', marginX, marginY, finalWidth, finalHeight);
             pdf.save(`CYS_資訊日能力證書_${currentUser.name}.pdf`);
-            
-        } catch (error) { 
-            console.error(error); 
-            alert("PDF 生成失敗，請稍後再試。"); 
-        } finally { 
+        } catch (error) { console.error(error); alert("PDF 生成失敗，請稍後再試。"); } 
+        finally { 
             certArea.classList.remove('exporting-a4'); 
             radarChart.resize();
-            btn.disabled = false; 
-            btn.innerText = '📥 下載 A4 證書 PDF'; 
+            btn.disabled = false; btn.innerText = '📥 下載 PDF 證書'; 
         }
     }
 </script>
