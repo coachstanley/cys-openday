@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CYS 薈藝博文升中資訊日 - 系統管理員平台</title>
     
     <!-- 引入 Firebase v8 CDN -->
@@ -16,123 +16,168 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
-        body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; margin: 0; background-color: #f4f7f6; color: #333; }
-        .sidebar { width: 250px; background-color: #004080; color: white; position: fixed; height: 100vh; padding-top: 20px; box-sizing: border-box; z-index: 50;}
+        * { box-sizing: border-box; }
+        body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; margin: 0; background-color: #f4f7f6; color: #333; overflow-x: hidden; }
+        
+        /* 🌟 RWD 頂部導覽列 (僅手機版顯示) 🌟 */
+        .mobile-header { display: none; background-color: #004080; color: white; padding: 15px 20px; align-items: center; justify-content: space-between; position: fixed; width: 100%; top: 0; z-index: 60; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .mobile-header h1 { font-size: 16px; margin: 0; }
+        .hamburger-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.5); z-index: 40; }
+        .sidebar-overlay.active { display: block; }
+
+        /* 側邊導覽列 */
+        .sidebar { width: 250px; background-color: #004080; color: white; position: fixed; height: 100vh; top: 0; left: 0; padding-top: 20px; z-index: 50; transition: transform 0.3s ease; overflow-y: auto; }
         .sidebar-brand { text-align: center; padding: 0 15px; margin-bottom: 25px; }
-        
-        /* 側邊欄校徽 */
-        .school-logo { max-width: 80px; max-height: 80px; width: auto; height: auto; object-fit: contain; padding: 5px; margin-bottom: 10px; }
-        
+        .school-logo { max-width: 80px; max-height: 80px; width: auto; height: auto; border-radius: 50%; background-color: white; object-fit: contain; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin-bottom: 10px; }
         .sidebar h2 { font-size: 14px; margin: 0; line-height: 1.4; }
-        .nav-btn { display: block; width: 100%; padding: 15px 20px; text-align: left; background: none; border: none; color: #ddd; font-size: 16px; cursor: pointer; transition: 0.3s; box-sizing: border-box; }
+        .nav-btn { display: block; width: 100%; padding: 15px 20px; text-align: left; background: none; border: none; color: #ddd; font-size: 16px; cursor: pointer; transition: 0.3s; }
         .nav-btn:hover, .nav-btn.active { background-color: #0059b3; color: white; border-left: 5px solid #ffcc00; }
         .logout-btn { position: absolute; bottom: 20px; width: 100%; color: #ff6b6b; font-weight: bold; }
-        .main-content { margin-left: 250px; padding: 30px; box-sizing: border-box; }
-        .header-title { margin-top: 0; color: #004080; border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
-        .section { display: none; }
+        
+        /* 主要內容區 */
+        .main-content { margin-left: 250px; padding: 30px; transition: margin 0.3s ease; min-height: 100vh; }
+        .header-title { margin-top: 0; color: #004080; border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; font-size: 24px; }
+        .section { display: none; animation: fadeIn 0.3s ease; }
         .section.active { display: block; }
-        .dashboard-cards { display: flex; gap: 20px; margin-bottom: 30px; }
-        .card { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; position: relative; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 統計卡片 */
+        .dashboard-cards { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+        .card { flex: 1; min-width: 250px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; position: relative; }
         .card h3 { margin: 0 0 10px 0; color: #666; font-size: 16px; }
         .card .number { font-size: 36px; font-weight: bold; color: #007bff; }
-        .chart-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 400px; }
-        .toolbar { display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-        .search-box { flex: 1; min-width: 250px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
-        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; color: white; font-weight: bold; transition: 0.2s; }
-        .btn-add { background-color: #007bff; }
-        .btn-export { background-color: #28a745; }
-        .btn-danger { background-color: #dc3545; }
-        .table-container { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-x: auto; }
+        .chart-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 400px; width: 100%; }
+
+        /* 工具列與表格 */
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
+        .search-box { flex: 1; min-width: 280px; padding: 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+        .toolbar-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; color: white; font-weight: bold; transition: 0.2s; text-align: center; }
+        .btn-add { background-color: #007bff; } .btn-export { background-color: #28a745; } .btn-danger { background-color: #dc3545; }
+        
+        .table-container { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
         th { background-color: #f8f9fa; color: #555; font-weight: bold; }
         th.checkbox-col, td.checkbox-col { width: 40px; text-align: center; padding: 12px 5px; }
         tr:hover { background-color: #f1f7fd; }
-        .status { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
         .status.active { background-color: #d4edda; color: #155724; }
         .status.pending { background-color: #fff3cd; color: #856404; }
-        .action-btn { background: none; border: none; cursor: pointer; color: #007bff; font-size: 13px; margin-right: 5px; padding: 5px; }
-        .action-btn:hover { text-decoration: underline; background: #e9ecef; border-radius: 4px; }
+        .action-btn { background: none; border: none; cursor: pointer; color: #007bff; font-size: 13px; margin-right: 5px; padding: 5px 8px; border-radius: 4px; }
+        .action-btn:hover { background: #e9ecef; }
         .action-btn.delete { color: #dc3545; }
-        
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+
+        /* Modal 彈出視窗 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 15px; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 100%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+        .modal-content { background: white; padding: 25px; border-radius: 10px; width: 100%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; flex-wrap: wrap; }
         .btn-cancel { background-color: #6c757d; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .csv-import-box { background: #f8f9fa; border: 2px dashed #004080; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
-        .csv-import-box input[type="file"] { display: none; }
-        .csv-label-btn { background-color: #004080; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; display: inline-block; font-size: 13px; font-weight: bold; margin: 10px 0; }
-        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .form-group { flex: 1; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; }
-        
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+
+        /* QR Code & 系統設定 */
         .qr-category { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .qr-category h3 { color: #004080; border-bottom: 2px solid #ffcc00; display: inline-block; padding-bottom: 5px; margin-top: 0; }
-        .qr-grid { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px; }
+        .qr-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; justify-content: center; }
         .qr-card { text-align: center; border: 1px solid #eee; padding: 15px; border-radius: 8px; background: #f9f9f9; width: 140px; }
-        .qr-card canvas { background: white; padding: 5px; border: 1px solid #ddd; border-radius: 5px; }
-        .qr-card p { font-weight: bold; color: #555; margin: 10px 0; font-size: 16px; }
+        .qr-card canvas { background: white; padding: 5px; border: 1px solid #ddd; border-radius: 5px; width: 100px; height: 100px; }
         .download-btn { background-color: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; width: 100%; }
         
-        .settings-card { background: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; max-width: 600px; }
-        .logo-preview-area { display: flex; align-items: center; gap: 20px; margin-top: 10px; }
-        .preview-img { max-width: 100px; max-height: 100px; object-fit: contain; padding: 5px; background: #fafafa; }
-        
-        /* 📜 證書預覽與 A4 排版樣式 */
+        .settings-card { background: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; max-width: 100%; }
+        .logo-preview-area { display: flex; align-items: center; gap: 20px; margin-top: 15px; flex-wrap: wrap; }
+        .preview-img { max-width: 100px; max-height: 100px; object-fit: contain; padding: 5px; background: #fafafa; border: 1px dashed #ccc; border-radius: 8px; }
+
+        /* 🌟 RWD 媒體查詢 (Media Queries) 🌟 */
+        @media (max-width: 768px) {
+            .mobile-header { display: flex; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 80px 15px 20px 15px; }
+            
+            .header-title { font-size: 20px; }
+            .card { min-width: 100%; }
+            .chart-container { padding: 10px; height: 300px; }
+            
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .toolbar-btns { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+            .toolbar-btns .btn { width: 100%; font-size: 13px; padding: 12px 5px; }
+            .search-box { width: 100%; min-width: 100%; }
+            
+            .form-row { flex-direction: column; gap: 10px; }
+            .modal-content { padding: 20px 15px; }
+            .modal-actions { flex-direction: column; }
+            .modal-actions button { width: 100%; margin-bottom: 5px; }
+            
+            .action-btn { display: block; width: 100%; text-align: left; padding: 10px; border-bottom: 1px solid #f1f1f1; margin-bottom: 2px; }
+            td:last-child { min-width: 140px; }
+        }
+
+        /* 📜 證書預覽樣式 (無裁切修復版) */
         .cert-render-area { background-color: #ffffff; padding: 30px; box-sizing: border-box; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; position: relative; }
         .cert-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #004080; padding-bottom: 15px; }
-        
-        /* 🌟 核心修復：證書校徽不變形、不裁切 🌟 */
-        .cert-logo { 
-            max-width: 90px; 
-            max-height: 90px; 
-            width: auto; 
-            height: auto; 
-            object-fit: contain; 
-            margin-bottom: 10px; 
-        }
-        
-        .cert-header h1 { color: #004080; font-size: 20px; margin: 0; letter-spacing: 1px; }
-        .cert-header h2 { color: #333; font-size: 14px; margin: 5px 0 0 0; }
+        .cert-logo { max-width: 90px; max-height: 90px; width: auto; height: auto; object-fit: contain; margin-bottom: 10px; }
+        .school-title { color: #004080; font-size: 20px; margin: 0; letter-spacing: 1px; font-weight: bold; }
+        .cert-title { color: #333; font-size: 14px; margin: 5px 0 0 0; font-weight: bold; }
         .cert-info { display: flex; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
         .cert-info strong { color: #333; }
+        .cert-info p { margin: 3px 0; color: #555; }
         .cert-chart { position: relative; width: 100%; height: 300px; margin-bottom: 15px; }
         .cert-ai { background: #ebf5ff; border-left: 4px solid #007bff; padding: 15px; border-radius: 5px; font-size: 13px; line-height: 1.5; }
-        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 2000; align-items: center; justify-content: center; flex-direction: column; font-size: 20px; color: #004080; font-weight: bold; }
-        .prize-badge { background-color: #e3f2fd; color: #0d47a1; font-weight: bold; border-radius: 4px; padding: 2px 6px; font-size: 11px; display: inline-block; margin-top: 4px; }
-        .cloud-badge { position: absolute; top: 10px; right: 10px; background: #28a745; color: white; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
         
-        /* 🌟 核心修復：A4 PDF 導出時校徽等比例放大 🌟 */
-        .exporting-a4 { width: 794px !important; height: 1123px !important; max-width: 794px !important; padding: 50px 60px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -15px !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; background-color: white !important; margin: 0 auto !important; }
-        .exporting-a4 .cert-header { padding-bottom: 20px !important; margin-bottom: 20px !important; border-bottom-width: 3px !important; }
-        
-        /* PDF 導出時校徽樣式 (使用 auto 防止擠壓) */
-        .exporting-a4 .cert-logo { 
-            max-width: 160px !important; 
-            max-height: 150px !important; 
-            width: auto !important; 
+        /* 🌟 A4 PDF 匯出強制排版 (防裁切) 🌟 */
+        .exporting-a4 { 
+            width: 794px !important; 
+            min-height: 1123px !important; 
             height: auto !important; 
-            margin-bottom: 15px !important;
+            max-width: none !important; 
+            padding: 40px 50px !important; 
+            border-width: 10px !important; 
+            outline-width: 3px !important; 
+            outline-offset: -12px !important; 
+            display: flex !important; 
+            flex-direction: column !important; 
+            justify-content: flex-start !important; 
+            background-color: white !important; 
+            margin: 0 !important; 
         }
+        .exporting-a4 .cert-header { padding-bottom: 15px !important; margin-bottom: 15px !important; border-bottom-width: 3px !important; }
+        .exporting-a4 .cert-logo { max-width: 110px !important; max-height: 110px !important; margin-bottom: 10px !important;}
+        .exporting-a4 .school-title { font-size: 30px !important; margin-bottom: 8px !important; }
+        .exporting-a4 .cert-title { font-size: 20px !important; }
+        .exporting-a4 .cert-info { flex-direction: row !important; padding: 15px 25px !important; font-size: 16px !important; gap: 15px !important; margin-bottom: 20px !important;}
+        .exporting-a4 .cert-info p { font-size: 15px !important; margin: 6px 0 !important; }
+        .exporting-a4 .cert-info strong { font-size: 18px !important; }
+        .exporting-a4 .cert-chart { height: 380px !important; margin-bottom: 20px !important; }
+        .exporting-a4 .cert-ai { padding: 25px !important; border-left-width: 8px !important; margin-bottom: 15px !important;}
+        .exporting-a4 .cert-ai h4 { font-size: 20px !important; margin-bottom: 12px !important; }
+        .exporting-a4 .cert-ai p { font-size: 16px !important; line-height: 1.6 !important; margin: 8px 0 !important;}
+        .exporting-a4 .footer-text { font-size: 13px !important; line-height: 1.6 !important; margin-top: 20px !important; }
         
-        .exporting-a4 .school-title { font-size: 34px !important; margin-bottom: 10px !important; }
-        .exporting-a4 .cert-title { font-size: 22px !important; }
-        .exporting-a4 .cert-info { flex-direction: row !important; padding: 20px 30px !important; font-size: 18px !important; gap: 20px !important; margin-bottom: 30px !important;}
-        .exporting-a4 .cert-info p { font-size: 16px !important; margin: 8px 0 !important; }
-        .exporting-a4 .cert-info strong { font-size: 20px !important; }
-        .exporting-a4 .cert-chart { height: 450px !important; margin-bottom: 30px !important; }
-        .exporting-a4 .cert-ai { padding: 30px !important; border-left-width: 8px !important; margin-bottom: 20px !important;}
-        .exporting-a4 .cert-ai h4 { font-size: 22px !important; margin-bottom: 15px !important; }
-        .exporting-a4 .cert-ai p { font-size: 17px !important; line-height: 1.8 !important; margin: 10px 0 !important;}
-        .exporting-a4 .footer-text { font-size: 14px !important; margin-top: auto !important; line-height: 1.6 !important; }
+        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 2000; align-items: center; justify-content: center; flex-direction: column; font-size: 20px; color: #004080; font-weight: bold; }
+        .cloud-badge { position: absolute; top: 10px; right: 10px; background: #28a745; color: white; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
+        .prize-badge { background-color: #e3f2fd; color: #0d47a1; font-weight: bold; border-radius: 4px; padding: 2px 6px; font-size: 11px; display: inline-block; margin-top: 4px; }
     </style>
 </head>
 <body>
-    <div class="sidebar">
+
+    <!-- 📱 手機版頂部 Header -->
+    <div class="mobile-header">
+        <h1>CYS 管理平台</h1>
+        <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
+    </div>
+    
+    <!-- 手機版側邊欄遮罩 -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- 左側選單 -->
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <img id="sidebarLogo" class="school-logo" src="https://via.placeholder.com/100?text=CYS+Logo" alt="CYS Logo">
+            <img id="sidebarLogo" class="school-logo" src="https://www.cys.edu.hk/img/logo.png" alt="CYS Logo">
             <h2>明愛元朗陳震夏中學<br>薈藝博文升中資訊日</h2>
         </div>
         <button class="nav-btn active" onclick="showSection('dashboard')">📊 統計儀表板</button>
@@ -145,7 +190,7 @@
     <div class="main-content">
         <!-- 儀表板 -->
         <div id="dashboard" class="section active">
-            <h1 class="header-title">📊 薈藝博文升中資訊日即時統計</h1>
+            <h1 class="header-title">📊 即時統計儀表板</h1>
             <div class="dashboard-cards">
                 <div class="card"><div class="cloud-badge">☁️ Live</div><h3>總登記人數</h3><div class="number" id="statsTotal">0</div></div>
                 <div class="card"><div class="cloud-badge">☁️ Live</div><h3>已報到 / 參與活動</h3><div class="number" id="statsActive" style="color: #28a745;">0</div></div>
@@ -158,12 +203,12 @@
         <div id="users" class="section">
             <h1 class="header-title">👥 參與者管理與集點換獎查閱</h1>
             <div class="toolbar">
-                <input type="text" id="searchInput" class="search-box" placeholder="🔍 搜尋姓名、學校、電郵或電話號碼..." onkeyup="filterUsers()">
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button class="btn btn-add" onclick="openAddModal()">+ 新增與匯入</button>
-                    <button class="btn btn-export" onclick="exportToCSV()">📥 匯出 Excel (CSV)</button>
-                    <button class="btn btn-export" style="background-color: #17a2b8;" onclick="batchExportAllPDFs()">🎓 匯出全部 A4 證書</button>
-                    <button class="btn btn-danger" onclick="batchDeleteUsers()">🗑️ 批次刪除</button>
+                <input type="text" id="searchInput" class="search-box" placeholder="🔍 搜尋姓名、學校、電郵..." onkeyup="filterUsers()">
+                <div class="toolbar-btns">
+                    <button class="btn btn-add" onclick="openAddModal()">+ 新增</button>
+                    <button class="btn btn-export" onclick="exportToCSV()">📥 匯出 Excel</button>
+                    <button class="btn btn-export" style="background-color: #17a2b8;" onclick="batchExportAllPDFs()">🎓 匯出 PDF</button>
+                    <button class="btn btn-danger" onclick="batchDeleteUsers()">🗑️ 刪除</button>
                 </div>
             </div>
             <div class="table-container">
@@ -181,8 +226,8 @@
         
         <!-- QR Code -->
         <div id="qrcodes" class="section">
-            <h1 class="header-title">🖼️ 下載 1-5 分評估 QR Code</h1>
-            <p style="color: #666; margin-bottom: 20px;">請列印對應的 QR Code 放置於各教室。系統具備「2 分鐘防刷分」機制，並已使用防亂碼數字代碼技術。</p>
+            <h1 class="header-title">🖼️ 下載評估 QR Code</h1>
+            <p style="color: #666; margin-bottom: 20px; font-size: 14px;">請列印對應的 QR Code 放置於各教室。系統具備「2 分鐘防刷分」機制，並已使用防亂碼數字代碼技術。</p>
             <div id="qr-container"></div>
         </div>
 
@@ -190,13 +235,13 @@
         <div id="settings" class="section">
             <h1 class="header-title">⚙️ 系統設定</h1>
             <div class="settings-card">
-                <h3>🏫 雲端校徽同步設定</h3>
+                <h3 style="margin-top:0;">🏫 雲端校徽同步設定</h3>
                 <div class="logo-preview-area">
-                    <img id="settingsLogoPreview" class="preview-img" src="https://via.placeholder.com/100?text=CYS+Logo">
+                    <img id="settingsLogoPreview" class="preview-img" src="https://www.cys.edu.hk/img/logo.png" alt="校徽">
                     <div>
-                        <label for="logoUploadInput" class="btn btn-add" style="display:inline-block; margin-bottom: 5px;">選擇校徽圖片</label>
-                        <input type="file" id="logoUploadInput" accept="image/png, image/jpeg" onchange="previewAndSaveLogo(this)">
-                        <p style="color: #999; font-size: 12px; margin: 0;">上傳後將自動同步至 Firebase 雲端。<br>所有手機端與 PDF 證書將完美呈現此校徽！</p>
+                        <label for="logoUploadInput" class="btn btn-add" style="display:inline-block; margin-bottom: 10px;">選擇校徽圖片</label>
+                        <input type="file" id="logoUploadInput" accept="image/png, image/jpeg" onchange="previewAndSaveLogo(this)" style="display: none;">
+                        <p style="color: #999; font-size: 12px; margin: 0; line-height: 1.5;">上傳後將自動同步至 Firebase 雲端。<br>所有手機端與 PDF 證書將完美呈現此校徽！</p>
                     </div>
                 </div>
             </div>
@@ -212,10 +257,9 @@
             <h3 style="margin-top:0; border-bottom:1px solid #ccc; padding-bottom:10px;">🔍 證書預覽</h3>
             <div id="certRenderArea" class="cert-render-area">
                 <div class="cert-header">
-                    <!-- 校徽由 JS 動態載入雲端 Base64 -->
-                    <img id="certModalLogo" class="cert-logo" src="https://via.placeholder.com/150" alt="CYS Logo">
-                    <h1>明愛元朗陳震夏中學</h1>
-                    <h2>🤖 薈藝博文升中資訊日 - 個人能力證書</h2>
+                    <img id="certModalLogo" class="cert-logo" src="https://www.cys.edu.hk/img/logo.png" crossorigin="anonymous">
+                    <h1 class="school-title">明愛元朗陳震夏中學</h1>
+                    <h2 class="cert-title">🤖 薈藝博文升中資訊日 - 個人能力證書</h2>
                 </div>
                 <div class="cert-info">
                     <div><p>姓名：<strong id="certName"></strong></p><p>學校：<strong id="certSchool"></strong></p></div>
@@ -223,18 +267,18 @@
                 </div>
                 <div class="cert-chart"><canvas id="certRadarChart"></canvas></div>
                 <div class="cert-ai">
-                    <h4>✨ AI 智能綜合能力分析</h4>
-                    <p><span style="color:#28a745;font-weight:bold;">【優勢讚賞】</span> <span id="certAiPositive"></span></p>
-                    <p><span style="color:#d39e00;font-weight:bold;">【優化建議】</span> <span id="certAiSuggest"></span></p>
+                    <h4 style="margin-top: 0; color: #004080; font-size: 14px; margin-bottom: 8px;">✨ AI 智能綜合能力分析</h4>
+                    <p style="margin: 6px 0; font-size: 13px;"><span style="color:#28a745;font-weight:bold;">【優勢讚賞】</span> <span id="certAiPositive"></span></p>
+                    <p style="margin: 6px 0; font-size: 13px;"><span style="color:#d39e00;font-weight:bold;">【優化建議】</span> <span id="certAiSuggest"></span></p>
                 </div>
                 <div class="footer-text" style="text-align: right; color: #555; font-size: 11px; margin-top: 18px; border-top: 1px solid #eef2f5; padding-top: 12px; font-weight: bold; line-height: 1.6;">
-                    <p>此證書由明愛元朗陳震夏中學 AI 能力評估系統運算生成。</p>
-                    <p style="color: #004080; margin-top: 4px;">本系統由副校長張耀宗博士設計，版權均為學校所有。</p>
+                    <p style="margin:0;">此證書由明愛元朗陳震夏中學 AI 能力評估系統運算生成。</p>
+                    <p style="color: #004080; margin: 4px 0 0 0;">本系統由副校長張耀宗博士設計，版權均為學校所有。</p>
                 </div>
             </div>
             <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeCertModal()">關閉預覽</button>
-                <button class="btn btn-export" style="background-color: #dc3545;" onclick="downloadSinglePDF()">📥 下載 A4 證書 PDF</button>
+                <button class="btn-cancel" onclick="closeCertModal()">關閉</button>
+                <button class="btn btn-export" style="background-color: #dc3545;" onclick="downloadSinglePDF()">📥 下載 A4</button>
             </div>
         </div>
     </div>
@@ -242,7 +286,7 @@
     <!-- 新增與匯入 Modal -->
     <div id="addUserModal" class="modal-overlay">
         <div class="modal-content">
-            <h3>📝 新增參與者或大量匯入</h3>
+            <h3 style="margin-top:0;">📝 新增參與者或大量匯入</h3>
             <div class="csv-import-box">
                 <label for="csvFileInput" class="csv-label-btn">📂 選擇 CSV 檔案匯入</label>
                 <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(this)">
@@ -252,7 +296,7 @@
                 <div class="form-group"><label>學校</label><select id="addSchool" class="school-select-list"></select></div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>年級</label><select id="addGrade"><option value="小六">小六</option><option value="小五">小五</option></select></div>
+                <div class="form-group"><label>年級</label><select id="addGrade"><option value="小六">小六</option><option value="小五">小五</option><option value="小四">小四</option><option value="小三">小三</option><option value="其他">其他</option></select></div>
                 <div class="form-group"><label>電郵 (不可為空)</label><input type="email" id="addEmail"></div>
             </div>
             <div class="form-row">
@@ -261,7 +305,7 @@
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeAddModal()">取消</button>
-                <button class="btn btn-add" id="regBtn" onclick="saveNewUser()">寫入雲端新增</button>
+                <button class="btn btn-add" id="regBtn" onclick="saveNewUser()">寫入雲端</button>
             </div>
         </div>
     </div>
@@ -269,9 +313,9 @@
     <!-- 修改參與者資料 Modal -->
     <div id="editUserModal" class="modal-overlay">
         <div class="modal-content">
-            <h3>✏️ 修改參與者資料</h3>
+            <h3 style="margin-top:0;">✏️ 修改參與者資料</h3>
             <div class="form-row">
-                <div class="form-group"><label>電郵 (帳號 ID，不可修改)</label><input type="email" id="editEmail" disabled style="background-color: #e9ecef; cursor: not-allowed;"></div>
+                <div class="form-group"><label>電郵 (帳號 ID，不可修改)</label><input type="email" id="editEmail" disabled style="background-color: #e9ecef;"></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>姓名</label><input type="text" id="editName"></div>
@@ -286,7 +330,7 @@
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeEditModal()">取消</button>
-                <button class="btn btn-add" style="background-color: #ff9800;" onclick="saveEditedUser()">儲存修改至雲端</button>
+                <button class="btn btn-add" style="background-color: #ff9800;" onclick="saveEditedUser()">儲存修改</button>
             </div>
         </div>
     </div>
@@ -306,13 +350,30 @@
         const abilities = ['溝通應對', '探究解難', '邏輯思維', '突破創意', '科技應用'];
         let previewChartInstance = null;
         let mockUsers = []; 
-        let currentSystemLogo = "https://via.placeholder.com/150?text=CYS+Logo"; 
+        let currentSystemLogo = "https://www.cys.edu.hk/img/logo.png"; 
 
         const hasSessionToken = sessionStorage.getItem('admin_token') === 'secure_session_active';
         const hasLocalToken = localStorage.getItem('admin_token_backup') === 'secure_session_active';
-        const isLocalFileMode = window.location.protocol === 'file:';
-        if (!hasSessionToken && !hasLocalToken && !isLocalFileMode) {
+        if (!hasSessionToken && !hasLocalToken && window.location.protocol !== 'file:') {
             alert('請先登入！'); window.location.href = 'index.html';
+        }
+
+        // 🌟 手機版側邊欄切換邏輯 🌟
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        function showSection(sectionId) { 
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active')); 
+            document.getElementById(sectionId).classList.add('active'); 
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if(window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('show');
+                document.getElementById('sidebarOverlay').classList.remove('active');
+            }
         }
 
         function getAverageScores(scoresObj) {
@@ -341,8 +402,9 @@
         }
 
         const districtsSchools = {
-            "元朗區": ["光明學校", "鐘聲學校", "元朗公立中學校友會小學", "南元朗官立小學"],
-            "天水圍區": ["樂善堂梁銶琚學校", "伊利沙伯中學舊生會小學", "天水圍官立小學"],
+            "元朗區": ["光明學校", "光明英來學校", "南元朗官立小學", "元朗商會小學", "元朗公立中學校友會小學", "鐘聲學校", "基督教宣道會徐澤林紀念小學", "聖公會靈愛小學", "佛教陳榮根紀念學校", "中華基督教會元朗真光小學", "元朗朗屏邨東莞學校", "元朗朗屏邨惠州學校", "錦田公立黑排小學", "八鄉中心小學", "惇裕學校", "通德學校", "基督教香港信義會宏達小學", "基督教香港信義會啟信學校"],
+            "天水圍區": ["天水圍官立小學", "天水圍天主教小學", "樂善堂梁銶琚學校", "樂善堂梁銶琚學校(分校)", "伊利沙伯中學舊生會小學", "伊利沙伯中學舊生會小學分校", "東華三院潮陽百欣小學", "東華三院李東海小學", "獅子會何德心小學", "香港青年協會李兆基小學", "金巴崙長老會耀道小學", "順德聯誼總會伍冕端小學", "中華基督教會方潤華小學", "聖公會天水圍靈愛小學", "宣道會葉紹蔭紀念小學", "元朗寶覺小學", "十八鄉鄉事委員會公益社小學", "天水圍循道衛理小學"],
+            "屯門區": ["屯門官立小學", "保良局志豪小學", "保良局莊啟程第二小學", "保良局方王錦全小學", "保良局梁周順琴小學", "順德聯誼總會何日東小學", "順德聯誼總會胡少渠紀念小學", "順德聯誼總會李金小學", "仁愛堂劉皇發夫人小學", "博愛醫院歷屆總理聯誼會鄭任安夫人學校", "博愛醫院歷屆總理聯誼會鄭任安夫人千禧小學", "世界龍岡學校劉德容紀念小學", "青山天主教小學", "興德學校", "道教青松小學", "道教青松小學(湖景邨)", "仁濟醫院羅陳楚思小學", "中華基督教會拔臣小學", "中華基督教會蒙黃花沃紀念小學", "柏立基教育學院校友會何壽基學校", "台山商會學校", "五邑鄒振猷學校", "香港紅卍字會屯門卍慈小學", "路德會呂祥光小學", "聖公會蒙恩小學"],
             "其他地區 / 其他學校": ["其他小學"]
         };
 
@@ -362,7 +424,6 @@
             populateSchoolDropdowns();
             document.getElementById('certDate').innerText = new Date().toLocaleDateString('zh-HK');
             
-            // 雲端載入校徽
             db.collection("system").doc("settings").onSnapshot((doc) => {
                 if (doc.exists && doc.data().logoBase64) {
                     currentSystemLogo = doc.data().logoBase64;
@@ -372,14 +433,11 @@
                 }
             });
 
-            // 雲端即時監聽 Users 
             db.collection("users").onSnapshot((snapshot) => {
                 mockUsers = [];
                 snapshot.forEach((doc) => { 
                     let u = doc.data();
-                    if (Array.isArray(u.scores) || !u.scores) {
-                        u.scores = { "0": [], "1": [], "2": [], "3": [], "4": [] };
-                    }
+                    if (Array.isArray(u.scores) || !u.scores) { u.scores = { "0": [], "1": [], "2": [], "3": [], "4": [] }; }
                     mockUsers.push(u); 
                 });
                 mockUsers.sort((a, b) => b.id - a.id);
@@ -402,19 +460,20 @@
             data.forEach(user => {
                 const pScore = getParticipationScore(user.scores || {});
                 const prize = getPrizeLevel(pScore);
+                const prizeClaimedStr = user.prizeClaimed ? `<br><span style="color:#d32f2f;font-weight:bold;font-size:11px;">[已領獎]</span>` : '';
                 const statusBadge = user.status === 'active' ? 
-                    `<span class="status active">已報到</span><br><span class="prize-badge">集點：${pScore}攤 (${prize})</span>` : 
+                    `<span class="status active">已報到</span><br><span class="prize-badge">集點：${pScore}攤 (${prize})</span>${prizeClaimedStr}` : 
                     `<span class="status pending">未報到</span>`;
                 
                 tbody.innerHTML += `<tr>
                         <td class="checkbox-col"><input type="checkbox" class="user-cb" value="${user.email}"></td>
-                        <td><strong>${user.name}</strong></td><td>${user.school}</td><td>${user.grade}</td>
-                        <td>${user.email}<br><small style="color:#888;">${user.phone}</small></td><td>${statusBadge}</td>
+                        <td><strong>\${user.name}</strong></td><td>\${user.school}</td><td>${user.grade}</td>
+                        <td>\${user.email}<br><small style="color:#888;">\${user.phone}</small></td><td>${statusBadge}</td>
                         <td>
                             <button class="action-btn" onclick="previewCert('${user.email}')">👀 預覽證書</button>
                             <button class="action-btn" onclick="openEditModal('${user.email}')">✏️ 修改</button>
-                            <button class="action-btn" onclick="simulateScoreScan('${user.name}', '${user.email}')">⚡ 模擬評分</button>
-                            <button class="action-btn delete" onclick="deleteUser('${user.email}', '${user.name}')">刪除</button>
+                            <button class="action-btn" onclick="simulateScoreScan('\${user.name}', '\${user.email}')">⚡ 評分</button>
+                            <button class="action-btn delete" onclick="deleteUser('\${user.email}', '\${user.name}')">刪除</button>
                         </td></tr>`;
             });
             document.getElementById('selectAllCb').checked = false;
@@ -435,16 +494,13 @@
             if (selected.length === 0) { alert("請先勾選要刪除的參與者！"); return; }
             if (confirm(`⚠️ 確定要刪除這 ${selected.length} 位參與者的雲端資料嗎？此操作無法復原！`)) {
                 const batch = db.batch();
-                selected.forEach(cb => {
-                    const userRef = db.collection("users").doc(cb.value);
-                    batch.delete(userRef);
-                });
+                selected.forEach(cb => { batch.delete(db.collection("users").doc(cb.value)); });
                 batch.commit().then(() => alert(`✅ 成功刪除 ${selected.length} 筆資料！`)).catch(err => alert("刪除失敗：" + err.message));
             }
         }
 
         function deleteUser(email, name) { 
-            if(confirm(`確定刪除「${name}」的雲端資料嗎？這將無法復原。`)) { 
+            if(confirm(`確定刪除「${name}」？這將無法復原。`)) { 
                 db.collection("users").doc(email).delete().then(() => alert(`✅ 已成功刪除 ${name}。`));
             } 
         }
@@ -467,17 +523,10 @@
             const email = document.getElementById('editEmail').value;
             const name = document.getElementById('editName').value.trim(); 
             const school = document.getElementById('editSchool').value;
-            const grade = document.getElementById('editGrade').value;
-            const phone = document.getElementById('editPhone').value.trim();
-            const status = document.getElementById('editStatus').value;
-
             if (!name || !school) { alert("姓名與學校不可為空！"); return; }
-            
             db.collection("users").doc(email).update({
-                name: name, school: school, grade: grade, phone: phone, status: status
-            }).then(() => {
-                closeEditModal(); alert(`✅ 資料修改成功並已同步至雲端！`);
-            }).catch(err => alert("修改失敗：" + err.message));
+                name: name, school: school, grade: document.getElementById('editGrade').value, phone: document.getElementById('editPhone').value.trim(), status: document.getElementById('editStatus').value
+            }).then(() => { closeEditModal(); alert(`✅ 資料修改成功！`); }).catch(err => alert("修改失敗：" + err.message));
         }
 
         function openAddModal() { document.getElementById('addUserModal').classList.add('active'); }
@@ -485,16 +534,14 @@
         
         function saveNewUser() {
             const name = document.getElementById('addName').value.trim(); const school = document.getElementById('addSchool').value;
-            const email = document.getElementById('addEmail').value.trim().toLowerCase();
-            const phone = document.getElementById('addPhone').value.trim();
-            if (!name || !school || !email || !phone) { alert("姓名、學校、電郵與電話皆為必填！"); return; }
+            const email = document.getElementById('addEmail').value.trim().toLowerCase(); const phone = document.getElementById('addPhone').value.trim();
+            if (!name || !school || !email || !phone) { alert("必填欄位不可為空！"); return; }
             
             document.getElementById('regBtn').disabled = true;
-            const newUser = { id: Date.now(), name, school, grade: document.getElementById('addGrade').value, email: email, phone: phone, status: document.getElementById('addStatus').value, scores: { "0": [], "1": [], "2": [], "3": [], "4": [] } };
+            const newUser = { id: Date.now(), name, school, grade: document.getElementById('addGrade').value, email, phone, status: document.getElementById('addStatus').value, scores: { "0": [], "1": [], "2": [], "3": [], "4": [] }, prizeClaimed: false };
             
             db.collection("users").doc(email).set(newUser).then(() => {
-                closeAddModal(); alert(`✅ 成功新增並寫入雲端：${name}`);
-                document.getElementById('regBtn').disabled = false;
+                closeAddModal(); alert(`✅ 成功新增：${name}`); document.getElementById('regBtn').disabled = false;
             }).catch(err => { alert("寫入失敗！"); document.getElementById('regBtn').disabled = false; });
         }
 
@@ -502,38 +549,33 @@
             const file = input.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                const rows = e.target.result.split('\n'); 
-                const batch = db.batch(); let importCount = 0;
-                
+                const rows = e.target.result.split('\n'); const batch = db.batch(); let importCount = 0;
                 for (let i = 0; i < rows.length; i++) {
                     const row = rows[i].trim(); if (!row) continue;
                     const columns = row.split(',');
                     if (i === 0 && (columns[0].includes('姓名') || columns[0].toLowerCase().includes('name'))) continue;
-                    
                     const email = columns[3] ? columns[3].trim().toLowerCase() : '';
                     if (columns[0] && columns[1] && email) {
                         const userRef = db.collection("users").doc(email);
                         batch.set(userRef, { 
                             id: Date.now() + i, name: columns[0].trim(), school: columns[1].trim(), grade: columns[2] ? columns[2].trim() : '小六', email: email, phone: columns[4] ? columns[4].trim() : '', status: 'pending', 
-                            scores: { "0": [], "1": [], "2": [], "3": [], "4": [] } 
+                            scores: { "0": [], "1": [], "2": [], "3": [], "4": [] }, prizeClaimed: false
                         });
                         importCount++;
                     }
                 }
-                if (importCount > 0) { batch.commit().then(() => { alert(`🎉 成功批次匯入 ${importCount} 筆資料至雲端！`); closeAddModal(); }); }
+                if (importCount > 0) { batch.commit().then(() => { alert(`🎉 成功匯入 ${importCount} 筆資料！`); closeAddModal(); }); }
             };
             reader.readAsText(file, 'UTF-8');
         }
 
         function exportToCSV() {
             if (mockUsers.length === 0) return;
-            let csvContent = "\ufeff姓名,就讀學校,年級,電子郵件,聯絡電話,參與狀態,體驗攤位數,符合獎品,溝通應對(平均),探究解難(平均),邏輯思維(平均),突破創意(平均),科技應用(平均)\n";
+            let csvContent = "\ufeff姓名,就讀學校,年級,電子郵件,聯絡電話,參與狀態,已領獎,體驗攤位數,符合獎品,溝通應對(平均),探究解難(平均),邏輯思維(平均),突破創意(平均),科技應用(平均)\n";
             mockUsers.forEach(user => {
-                const s = user.scores || {};
-                const avg = getAverageScores(s);
-                const pScore = getParticipationScore(s);
-                const prize = getPrizeLevel(pScore);
-                csvContent += `"${user.name}","${user.school}","${user.grade}","${user.email}","${user.phone}","${user.status === 'active' ? '已報到' : '未報到'}",${pScore},"${prize}",${avg[0]},${avg[1]},${avg[2]},${avg[3]},${avg[4]}\n`;
+                const s = user.scores || {}; const avg = getAverageScores(s); const pScore = getParticipationScore(s); const prize = getPrizeLevel(pScore);
+                const claimed = user.prizeClaimed ? "是" : "否";
+                csvContent += `"${user.name}","${user.school}","${user.grade}","${user.email}","${user.phone}","${user.status === 'active' ? '已報到' : '未報到'}","${claimed}",${pScore},"${prize}",${avg[0]},${avg[1]},${avg[2]},${avg[3]},${avg[4]}\n`;
             });
             const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
             link.download = `CYS_升中資訊日名單_${new Date().toISOString().slice(0, 10)}.csv`; link.click();
@@ -541,29 +583,22 @@
 
         function simulateScoreScan(studentName, email) {
             const user = mockUsers.find(u => u.email === email); if(!user) return;
-            const scoreInputs = prompt(`請為 ${studentName} 新增一筆評分 (格式：能力索引0-4,1-5分。例如：4,5 代表「科技應用」得5分)：`);
+            const scoreInputs = prompt(`請為 ${studentName} 新增一筆評分 (格式：能力索引0-4,1-5分。例如：4,5)：`);
             if (scoreInputs) {
                 const parts = scoreInputs.split(',').map(num => parseInt(num.trim()));
                 if (parts.length === 2 && parts[0] >= 0 && parts[0] <= 4 && parts[1] >= 1 && parts[1] <= 5) {
-                    let sMap = user.scores || {};
-                    if(Array.isArray(sMap)) sMap = { "0": [], "1": [], "2": [], "3": [], "4": [] };
-                    const keyStr = String(parts[0]);
-                    if(!sMap[keyStr]) sMap[keyStr] = [];
-                    sMap[keyStr].push(parts[1]);
-                    
-                    db.collection("users").doc(email).update({
-                        scores: sMap, status: 'active'
-                    }).then(() => alert("✅ 雲端加分成功！學生手機將即時更新！"));
-                } else { alert("格式錯誤！正確格式例如：0,5"); }
+                    let sMap = user.scores || {}; if(Array.isArray(sMap)) sMap = { "0": [], "1": [], "2": [], "3": [], "4": [] };
+                    const keyStr = String(parts[0]); if(!sMap[keyStr]) sMap[keyStr] = []; sMap[keyStr].push(parts[1]);
+                    db.collection("users").doc(email).update({ scores: sMap, status: 'active' }).then(() => alert("✅ 雲端加分成功！"));
+                } else { alert("格式錯誤！"); }
             }
         }
 
         function setupCertificateDOM(user) {
             document.getElementById('certName').innerText = user.name; document.getElementById('certSchool').innerText = user.school; document.getElementById('certGrade').innerText = user.grade;
-            document.getElementById('certModalLogo').src = currentSystemLogo; // 載入雲端校徽
+            document.getElementById('certModalLogo').src = currentSystemLogo; 
             
-            const rawScores = user.scores || {};
-            const avgScores = getAverageScores(rawScores);
+            const rawScores = user.scores || {}; const avgScores = getAverageScores(rawScores);
             
             const ctx = document.getElementById('certRadarChart').getContext('2d');
             if (previewChartInstance) previewChartInstance.destroy();
@@ -591,32 +626,64 @@
         }
         function closeCertModal() { document.getElementById('certPreviewModal').classList.remove('active'); }
 
+        // 🌟 核心防裁切：強制虛擬視窗克隆繪製 🌟
         async function getA4Canvas(certArea) {
-            const modalContent = document.getElementById('certModalContent');
+            const modalContent = document.getElementById('certModalContent'); 
             const origMaxWidth = modalContent.style.maxWidth;
             modalContent.style.maxWidth = '900px'; 
+            
             certArea.classList.add('exporting-a4');
-            previewChartInstance.resize();
+            previewChartInstance.resize(); 
+            
+            // 強制捲動到頂部防裁切
+            window.scrollTo(0,0); 
             await new Promise(r => setTimeout(r, 400)); 
-            const canvas = await html2canvas(certArea, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-            certArea.classList.remove('exporting-a4');
-            modalContent.style.maxWidth = origMaxWidth;
+            
+            const canvas = await html2canvas(certArea, { 
+                scale: 2.5, 
+                backgroundColor: '#ffffff', 
+                windowWidth: 800,
+                scrollY: -window.scrollY,
+                scrollX: 0,
+                useCORS: true,
+                onclone: function(clonedDoc) {
+                    const target = clonedDoc.getElementById('certRenderArea');
+                    target.className = "cert-render-area exporting-a4";
+                }
+            }); 
+            
+            certArea.classList.remove('exporting-a4'); 
+            modalContent.style.maxWidth = origMaxWidth; 
             previewChartInstance.resize();
             return canvas;
         }
 
         async function downloadSinglePDF() {
             if(!currentPreviewUser) return;
-            const certArea = document.getElementById('certRenderArea');
+            const certArea = document.getElementById('certRenderArea'); 
             const btn = document.querySelector('#certPreviewModal .btn-export');
-            btn.disabled = true; btn.innerText = '⏳ 生成 A4 中...';
+            btn.disabled = true; btn.innerText = '⏳ 生成中...';
             try {
-                const canvas = await getA4Canvas(certArea);
+                const canvas = await getA4Canvas(certArea); 
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-                pdf.save(`CYS_升中資訊日證書_${currentPreviewUser.name}.pdf`);
-            } catch(e) { console.error(e); alert("生成失敗"); } finally { btn.disabled = false; btn.innerText = '📥 下載 A4 證書 PDF'; }
+                const pdf = new jspdf.jsPDF('p', 'mm', 'a4'); 
+                
+                const pdfWidth = 210; const pdfHeight = 297;
+                let imgProps = pdf.getImageProperties(imgData); 
+                let finalWidth = pdfWidth; 
+                let finalHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                // 智慧縮放以適應一頁
+                if (finalHeight > pdfHeight) { 
+                    finalHeight = pdfHeight; 
+                    finalWidth = (imgProps.width * pdfHeight) / imgProps.height; 
+                }
+                const marginX = (pdfWidth - finalWidth) / 2; 
+                const marginY = (pdfHeight - finalHeight) / 2;
+                
+                pdf.addImage(imgData, 'JPEG', marginX, marginY, finalWidth, finalHeight);
+                pdf.save(`CYS_證書_${currentPreviewUser.name}.pdf`);
+            } catch(e) { console.error(e); alert("生成失敗"); } finally { btn.disabled = false; btn.innerText = '📥 下載 A4'; }
         }
 
         async function batchExportAllPDFs() {
@@ -626,18 +693,29 @@
             
             try {
                 const pdf = new jspdf.jsPDF('p', 'mm', 'a4'); 
+                const pdfWidth = 210; const pdfHeight = 297;
+                
                 for (let i = 0; i < mockUsers.length; i++) {
                     document.getElementById('loadingText').innerText = `正在生成證書 (${i+1}/${mockUsers.length})...`;
                     setupCertificateDOM(mockUsers[i]); 
                     const canvas = await getA4Canvas(document.getElementById('certRenderArea'));
+                    
                     if (i > 0) pdf.addPage();
-                    pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297); 
+                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                    let imgProps = pdf.getImageProperties(imgData); 
+                    let finalWidth = pdfWidth; 
+                    let finalHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    if (finalHeight > pdfHeight) { 
+                        finalHeight = pdfHeight; 
+                        finalWidth = (imgProps.width * pdfHeight) / imgProps.height; 
+                    }
+                    const marginX = (pdfWidth - finalWidth) / 2; const marginY = (pdfHeight - finalHeight) / 2;
+                    pdf.addImage(imgData, 'JPEG', marginX, marginY, finalWidth, finalHeight);
                 }
                 pdf.save(`CYS_全體證書_薈藝博文_${new Date().toISOString().slice(0, 10)}.pdf`);
             } catch (err) { console.error(err); } finally { overlay.style.display = 'none'; modal.style.zIndex = "1000"; closeCertModal(); }
         }
 
-        function showSection(sectionId) { document.querySelectorAll('.section').forEach(el => el.classList.remove('active')); document.getElementById(sectionId).classList.add('active'); }
         function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
         new Chart(document.getElementById('schoolChart').getContext('2d'), { type: 'bar', data: { labels: ['元朗公立中學校友會小學', '光明學校', '鐘聲學校', '南元朗官立小學', '其他'], datasets: [{ label: '人數', data: [150, 120, 95, 80, 411], backgroundColor: 'rgba(54, 162, 235, 0.6)' }] }, options: { responsive: true, maintainAspectRatio: false } });
@@ -645,17 +723,13 @@
         const qrContainer = document.getElementById('qr-container');
         abilities.forEach((ability, index) => {
             const catDiv = document.createElement('div'); catDiv.className = 'qr-category';
-            catDiv.innerHTML = `<h3>🎯 ${ability}</h3><div class="qr-grid" id="qr-grid-${index}"></div>`;
+            catDiv.innerHTML = `<h3 style="margin-top:0; color:#004080; border-bottom:2px solid #ffcc00; display:inline-block; padding-bottom:5px;">🎯 ${ability}</h3><div class="qr-grid" id="qr-grid-${index}"></div>`;
             qrContainer.appendChild(catDiv);
-            
             for (let s = 1; s <= 5; s++) {
-                const card = document.createElement('div'); card.className = 'qr-card';
-                const cId = `qr-canvas-${index}-${s}`;
-                card.innerHTML = `<canvas id="${cId}"></canvas><p>${s} 分</p><button class="download-btn" onclick="downloadQR('${cId}', '${ability}_${s}分')">⬇️ 下載圖檔</button>`;
+                const card = document.createElement('div'); card.className = 'qr-card'; const cId = `qr-canvas-${index}-${s}`;
+                card.innerHTML = `<canvas id="${cId}"></canvas><p style="font-weight:bold; margin:10px 0; font-size:16px;">${s} 分</p><button style="background:#6c757d; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;" onclick="downloadQR('${cId}', '${ability}_${s}分')">⬇️ 下載圖檔</button>`;
                 document.getElementById(`qr-grid-${index}`).appendChild(card);
-                
-                const qrData = JSON.stringify({ ability: index, score: s, token: "CYS-SECURE-KEY" });
-                new QRious({ element: document.getElementById(cId), value: qrData, size: 120, level: 'H' });
+                new QRious({ element: document.getElementById(cId), value: JSON.stringify({ ability: index, score: s, token: "CYS-SECURE-KEY" }), size: 120, level: 'H' });
             }
         });
         function downloadQR(cId, fn) { const a = document.createElement('a'); a.href = document.getElementById(cId).toDataURL("image/png"); a.download = `CYS_QR_${fn}.png`; a.click(); }
@@ -673,10 +747,7 @@
                         canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
                         const b64 = canvas.toDataURL('image/png'); 
-                        
-                        db.collection("system").doc("settings").set({ logoBase64: b64 }, { merge: true })
-                        .then(() => alert("✅ 雲端校徽上載成功！所有手機將自動同步更新。"))
-                        .catch(err => alert("上載失敗：" + err.message));
+                        db.collection("system").doc("settings").set({ logoBase64: b64 }, { merge: true }).then(() => alert("✅ 雲端校徽上載成功！")).catch(err => alert("上載失敗：" + err.message));
                     };
                     img.src = e.target.result;
                 };
