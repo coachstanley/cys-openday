@@ -7,11 +7,11 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <!-- 引入產生個人專屬 QR Code 的套件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     
     <style>
@@ -27,6 +27,7 @@
         .floor-badge { background-color: #e2e8f0; color: #1e293b; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; white-space: nowrap; }
         .highlight-event { color: #004080; font-weight: bold; }
         
+        /* 🎁 遊戲化集點獎品面板 */
         .prize-panel { background-color: #fff8e1; border: 2px solid #ffe082; width: 100%; max-width: 600px; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); text-align: center; }
         .prize-header { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: #b78103; border-bottom: 1px solid #ffd54f; padding-bottom: 8px; margin-bottom: 12px; }
         .prize-status-box { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
@@ -36,18 +37,22 @@
         .progress-bar { background: linear-gradient(90deg, #ffb300, #ff8f00); height: 100%; width: 0%; transition: width 0.8s ease-in-out; }
         .prize-encouragement { font-size: 13px; line-height: 1.4; color: #5d4037; font-weight: bold; font-style: italic; background-color: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #ffa000; text-align: left; margin-bottom: 12px; }
         
-        .btn-redeem { background-color: #e65100; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; box-shadow: 0 4px 6px rgba(230,81,0,0.3); animation: pulse 2s infinite; }
-        .btn-redeem:disabled { background-color: #aaa; box-shadow: none; animation: none; cursor: not-allowed; }
+        /* 🎫 兌換按鈕樣式 */
+        .btn-redeem { background-color: #e65100; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; box-shadow: 0 4px 6px rgba(230,81,0,0.3); transition: 0.3s; margin-top: 5px; }
+        .btn-redeem.claimed { background-color: #28a745 !important; box-shadow: none !important; cursor: not-allowed; }
 
         .certificate-container { background-color: #ffffff; width: 100%; max-width: 600px; padding: 5% 6%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; position: relative; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; }
         .cert-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #004080; padding-bottom: 12px; }
         .cert-logo { max-width: 90px; max-height: 90px; width: auto; height: auto; object-fit: contain; margin-bottom: 10px; }
         .school-title { color: #004080; font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
         .cert-title { color: #333; font-size: 14px; margin: 4px 0 0 0; font-weight: bold; }
+        
         .student-info { display: flex; flex-direction: row; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; gap: 10px; }
         .student-info p { margin: 3px 0; color: #555; font-size: 12px; }
         .student-info strong { color: #333; font-size: 14px; }
+        
         .chart-container { position: relative; width: 100%; height: 280px; margin-bottom: 16px; }
+        
         .ai-comments { background: #ebf5ff; border-left: 5px solid #007bff; padding: 15px; border-radius: 6px; margin-bottom: 16px; }
         .ai-comments h4 { margin-top: 0; color: #004080; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
         .ai-comments p { margin: 6px 0; font-size: 13px; line-height: 1.5; color: #444; }
@@ -71,8 +76,7 @@
         #reader { width: 100%; max-width: 320px; margin: auto; border: 2px solid #ccc; border-radius: 8px; overflow: hidden; background: #000; }
         .btn-close-scan { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; min-height: 40px; width: 100%; }
 
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(230, 81, 0, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(230, 81, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 81, 0, 0); } }
-        
+        /* A4 PDF 導出 CSS */
         .exporting-a4 { width: 794px !important; height: auto !important; min-height: 1123px !important; max-width: none !important; padding: 40px 50px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -12px !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; background-color: white !important; margin: 0 !important; }
         .exporting-a4 .cert-header { padding-bottom: 15px !important; margin-bottom: 15px !important; border-bottom-width: 3px !important; }
         .exporting-a4 .cert-logo { max-width: 110px !important; max-height: 110px !important; margin-bottom: 10px !important;}
@@ -90,14 +94,17 @@
 </head>
 <body>
 
+<!-- 📍 9 大特色活動導覽 -->
 <div class="info-panel" data-html2canvas-ignore="true">
     <div class="info-header" onclick="toggleInfoPanel()">
-        <span>📍 5 大特色活動導覽</span>
+        <span>📍 9 大特色活動導覽</span>
         <span id="panelArrow">▼</span>
     </div>
     <div class="info-content active" id="infoContent">
         <table class="schedule-table">
-            <thead><tr><th style="width: 20%;">編號</th><th style="width: 55%;">特色互動教室 (地點)</th><th style="width: 25%;">性質</th></tr></thead>
+            <thead>
+                <tr><th style="width: 20%;">編號</th><th style="width: 55%;">特色互動教室 (地點)</th><th style="width: 25%;">性質</th></tr>
+            </thead>
             <tbody>
                 <tr><td><span class="floor-badge">活動 1</span></td><td><span class="highlight-event">中文AI詩中有畫</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
                 <tr><td><span class="floor-badge">活動 2</span></td><td><span class="highlight-event">英文AI Voice-over</span></td><td><span style="color:#28a745;font-weight:bold;">[🏆 評分]</span></td></tr>
@@ -113,28 +120,31 @@
     </div>
 </div>
 
+<!-- 🎁 獨立集點換獎進度面板 -->
 <div class="prize-panel" data-html2canvas-ignore="true">
-    <div class="prize-header">🎁 我的資訊日集點換獎計劃</div>
+    <div class="prize-header">🎁 我的資訊日集點進度</div>
     <div class="prize-status-box">
-        <div>目前累計體驗：<span class="points-badge" id="displayPoints">0</span> 攤</div>
-        <div class="prize-tier" id="displayPrize">❌ 無獎品</div>
+        <div>目前挑戰進度：<span class="points-badge" id="displayPoints">0</span> 攤</div>
+        <div class="prize-tier" id="displayPrize">❌ 努力挑戰中</div>
     </div>
     <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
     <div class="prize-encouragement" id="displayEncouragement">歡迎參與！請開始掃描攤位 QR Code 來累積遊玩次數。</div>
-    <!-- 🌟 新增專屬換領 QR Code 按鈕 🌟 -->
-    <button class="btn-redeem" id="btnShowRedeem" onclick="showRedeemQR()" style="display: none;">🎫 出示換獎專屬 QR Code</button>
+    
+    <!-- 🌟 換領狀態與進度條拆分：不論是否已領獎，進度與挑戰 QR Code 獨立展示 🌟 -->
+    <button class="btn-redeem" id="btnShowRedeem" onclick="showRedeemQR()">🎫 出示換獎專屬 QR Code</button>
 </div>
 
 <!-- 專屬換領 QR Code Modal -->
 <div id="redeemModal" class="modal-overlay" data-html2canvas-ignore="true">
     <div class="modal-content">
         <h3>🎫 換獎專屬 QR Code</h3>
-        <p style="color: #666; font-size: 13px; margin-bottom: 15px;">請向禮物部職員出示此二維碼進行換領。<br><span style="color:#d32f2f; font-weight:bold;">注意：獎品只限換領一次，換領後無法撤銷。</span></p>
+        <p style="color: #666; font-size: 13px; margin-bottom: 15px;">請向禮物部職員出示此二維碼進行換領。<br><span style="color:#d32f2f; font-weight:bold;">注意：獎品只限換領一次，換領後系統將鎖定。</span></p>
         <canvas id="redeemCanvas" style="border: 1px solid #ddd; padding: 10px; border-radius: 10px; background: white; margin-bottom: 15px;"></canvas>
         <button class="btn-close-scan" onclick="document.getElementById('redeemModal').classList.remove('active')">關閉</button>
     </div>
 </div>
 
+<!-- 📜 個人能力證書本體 -->
 <div class="certificate-container" id="certificate-area">
     <div class="cert-header">
         <img id="certLogo" class="cert-logo" src="https://www.cys.edu.hk/img/logo.png" alt="School Logo" crossorigin="anonymous">
@@ -168,15 +178,18 @@
     </div>
 </div>
 
+<!-- 底部控制按鈕 -->
 <div class="btn-group" data-html2canvas-ignore="true">
     <button class="btn btn-edit" onclick="logout()">登出 / 返回首頁</button>
-    <button id="exportBtn" class="btn btn-export" onclick="exportPDF()">📥 下載 A4 證書 PDF</button>
+    <button id="exportBtn" class="btn btn-export" onclick="exportPDF()">📥 下載 PDF 證書</button>
 </div>
 
+<!-- 📷 懸浮掃碼按鈕 -->
 <button class="scan-float-btn" onclick="startScanner()" data-html2canvas-ignore="true">
     <span>📷</span>掃描獲分
 </button>
 
+<!-- 掃描二維碼彈出視窗 -->
 <div id="scanModal" class="modal-overlay">
     <div class="modal-content">
         <h3>📷 掃描攤位二維碼</h3>
@@ -221,6 +234,8 @@
         });
     }
 
+    // 🌟 2. 核心修正：每 SCAN 2 個 QR Code 代表完成 1 個攤位 🌟
+    // 使用「防重去重」機制：統計共有多少個「獨一無二」的活動有掃描過，除以 2 獲得完成攤位數
     function getParticipationScore(scoresObj) {
         let totalScans = 0;
         for (let i = 0; i < 5; i++) {
@@ -288,7 +303,7 @@
 
     loadUserCloudData();
 
-    // 監聽雲端資料庫 (包含獎品換領狀態)
+    // 監聽雲端資料庫
     db.collection("users").doc(loginEmail.toLowerCase()).onSnapshot((doc) => {
         if (doc.exists) {
             currentUser = doc.data();
@@ -305,59 +320,61 @@
         }
     });
 
-    // 🌟 獎品進度系統 (連動換領狀態) 🌟
+    // 🌟 1. 核心修復：挑戰進度與換領狀態完全分開展示 🌟
     function updatePrizeSystem(scores, isClaimed) {
         const points = getParticipationScore(scores); 
         document.getElementById('displayPoints').innerText = points;
 
-        let prizeText = "❌ 尚未獲獎";
+        // 🎯 A. 不論是否換領，【進度條】與【挑戰等級】始終反映學生的真實挑戰極限
+        let challengeTier = "❌ 努力挑戰中";
         let encouragementText = "";
-        let progressPercent = 0;
-        let showRedeemBtn = false;
+        let progressPercent = (points / 10) * 100;
+        if (progressPercent > 100) progressPercent = 100;
 
         if (points >= 10) {
-            prizeText = "🏆 大獎 (已解鎖！)";
-            encouragementText = "太厲害了！你已經體驗了 10 個攤位！🎉 請點擊下方按鈕出示 QR Code 領取精美【大獎】吧！🎁";
-            progressPercent = 100; showRedeemBtn = true;
+            challengeTier = "🏆 終極大獎挑戰者";
+            encouragementText = "太強了！你已成功攻克 10 個以上的攤位體驗！完美的 AI 冒險家！🌟";
         } else if (points >= 8) {
-            prizeText = "🥈 中獎 (已解鎖！)";
-            encouragementText = "超棒的！你可以點擊按鈕換領【中獎】，或再多挑戰 " + (10 - points) + " 個攤位，把終極【大獎】抱回家囉！🔥";
-            progressPercent = (points / 10) * 100; showRedeemBtn = true;
+            challengeTier = "🥈 中級挑戰者";
+            encouragementText = "超棒的！距離解鎖【大獎】只差 " + (10 - points) + " 個攤位，繼續衝刺吧！🔥";
         } else if (points >= 5) {
-            prizeText = "🥉 細獎 (已解鎖！)";
-            encouragementText = "幹得好！你可以點擊按鈕換領【細獎】，或再體驗 " + (8 - points) + " 個學科特色活動，升級為【中獎】！✨";
-            progressPercent = (points / 10) * 100; showRedeemBtn = true;
+            challengeTier = "🥉 初級挑戰者";
+            encouragementText = "做得好！已成功跨越基礎門檻，再體驗 " + (8 - points) + " 個學科特色活動，即可升級解鎖【中獎】！✨";
         } else {
-            prizeText = "❌ 努力挑戰中";
-            encouragementText = "歡迎！只要挑戰 " + (5 - points) + " 個互動教室，即可解鎖首階段【細獎】！出發吧！🚀";
-            progressPercent = (points / 10) * 100; showRedeemBtn = false;
+            challengeTier = "❌ 努力挑戰中";
+            encouragementText = "歡迎！再體驗 " + (5 - points) + " 個互動活動，就能解鎖【細獎】並獲得換獎 QR Code 囉！🚀";
         }
 
-        // 🌟 判斷是否已被職員換領 🌟
-        const btnRedeem = document.getElementById('btnShowRedeem');
-        if (isClaimed) {
-            prizeText = "✅ 獎品已換領";
-            encouragementText = "您已成功換領資訊日紀念獎品，感謝您的參與！請繼續體驗其他攤位，並在離開前匯出你的專屬 A4 證書留念。";
-            progressPercent = 100;
-            btnRedeem.style.display = "block";
-            btnRedeem.disabled = true;
-            btnRedeem.style.backgroundColor = "#28a745";
-            btnRedeem.innerText = "✅ 獎品已由職員核銷換領";
-            document.getElementById('progressBar').style.background = "#28a745";
-        } else {
-            btnRedeem.style.display = showRedeemBtn ? "block" : "none";
-            btnRedeem.disabled = false;
-            btnRedeem.style.backgroundColor = "#e65100";
-            btnRedeem.innerText = "🎫 出示換獎專屬 QR Code";
-            document.getElementById('progressBar').style.background = "linear-gradient(90deg, #ffb300, #ff8f00)";
-        }
-
-        document.getElementById('displayPrize').innerText = prizeText;
-        document.getElementById('displayEncouragement').innerText = encouragementText;
+        document.getElementById('displayPrize').innerText = challengeTier;
         document.getElementById('progressBar').style.width = progressPercent + "%";
+
+        // 🎯 B. 【換領按鈕狀態】獨立控管
+        const btnRedeem = document.getElementById('btnShowRedeem');
+        
+        if (isClaimed) {
+            // 已經到服務台兌換過
+            btnRedeem.className = "btn-redeem claimed";
+            btnRedeem.disabled = true;
+            btnRedeem.innerText = "✅ 獎品已於櫃檯成功換領 (系統鎖定)";
+            document.getElementById('progressBar').style.background = "#28a745";
+            document.getElementById('displayEncouragement').innerText = "感謝您的熱情參與！您已兌換了紀念獎品。您仍可繼續體驗其他學科活動，並下載您的專屬證書 PDF！🏫";
+        } else {
+            // 尚未換領，但已達到換領門檻 (最少 5 攤)
+            document.getElementById('progressBar').style.background = "linear-gradient(90deg, #ffb300, #ff8f00)";
+            document.getElementById('displayEncouragement').innerText = encouragementText;
+
+            if (points >= 5) {
+                btnRedeem.className = "btn-redeem";
+                btnRedeem.disabled = false;
+                btnRedeem.style.display = "block";
+                btnRedeem.innerText = "🎫 出示換獎專屬 QR Code";
+            } else {
+                // 還沒到最底 5 攤，隱藏換領按鈕
+                btnRedeem.style.display = "none";
+            }
+        }
     }
 
-    // 🌟 產生換領專用的唯一身份 QR Code 🌟
     function showRedeemQR() {
         if (!currentUser) return;
         const redeemData = JSON.stringify({ action: "redeem", email: currentUser.email });
@@ -437,10 +454,6 @@
         document.getElementById('ai-suggest').innerText = suggestText;
     }
 
-    const cooldownKey = `cooldown_${loginEmail}_${loginPhone}`;
-    let scanCooldowns = JSON.parse(localStorage.getItem(cooldownKey)) || {};
-
-    let html5QrCodeScanner = null;
     function startScanner() {
         document.getElementById('scanModal').classList.add('active');
         setTimeout(() => {
@@ -488,7 +501,7 @@
 
             stopScanner();
             
-            // 2 分鐘冷卻檢查
+            // 🛡️ 2 分鐘冷卻檢查
             const qrIdentifier = `${abilityName}_${newScore}`;
             const currentTime = Date.now();
             const lastScanTime = scanCooldowns[qrIdentifier];
@@ -502,6 +515,7 @@
             scanCooldowns[qrIdentifier] = currentTime;
             localStorage.setItem(cooldownKey, JSON.stringify(scanCooldowns));
 
+            // 更新分數 Map
             let localRawScores = currentUser.scores || {};
             if (Array.isArray(localRawScores)) {
                 localRawScores = { "0": [], "1": [], "2": [], "3": [], "4": [] };
@@ -535,17 +549,16 @@
 
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
-    // 🌟 自動放大防裁切，完美生成 A4 證書 PDF 🌟
     async function exportPDF() {
         const btn = document.getElementById('exportBtn');
         const certArea = document.getElementById('certificate-area');
         btn.disabled = true; btn.innerText = '⏳ 正在生成 A4 證書...';
         
-        window.scrollTo(0, 0); // 強制移至最頂端，防止 html2canvas 底部裁切
+        window.scrollTo(0, 0);
         certArea.classList.add('exporting-a4');
         radarChart.resize();
         
-        await new Promise(r => setTimeout(r, 600)); // 等待圖表重繪
+        await new Promise(r => setTimeout(r, 600));
         
         try {
             radarChart.options.animation = false; radarChart.update();
