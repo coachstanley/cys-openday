@@ -28,10 +28,11 @@
         .status-not-eligible { background-color: #fff3cd; border: 2px solid #ffc107; }
         
         .prize-title { font-size: 24px; font-weight: bold; margin: 10px 0; }
-        .claim-btn { width: 100%; padding: 15px; background-color: #4caf50; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 6px rgba(76,175,80,0.3); transition: 0.2s; }
+        .claim-btn { width: 100%; padding: 15px; background-color: #4caf50; color: white; border: none; border-radius: 8px; font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 6px rgba(76,175,80,0.3); transition: 0.2s; }
         .claim-btn:hover { background-color: #388e3c; }
         .claim-btn:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
         
+        .warning-note { font-size: 12px; color: #c62828; margin-top: 8px; font-weight: bold; }
         .scan-again-btn { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
@@ -52,7 +53,7 @@
         <div class="student-info">
             <p>姓名：<strong id="resName">---</strong></p>
             <p>學校：<strong id="resSchool">---</strong></p>
-            <p>已體驗攤位數：<strong id="resScore" style="color: #007bff; font-size: 18px;">0</strong> 攤</p>
+            <p>目前累積攤位數：<strong id="resScore" style="color: #007bff; font-size: 18px;">0</strong> 攤</p>
         </div>
         
         <div id="statusBox" class="status-box">
@@ -60,7 +61,8 @@
             <div id="prizeTitle" class="prize-title"></div>
         </div>
 
-        <button id="claimActionBtn" class="claim-btn" onclick="confirmClaim()">✅ 確認換領 (只限一次)</button>
+        <button id="claimActionBtn" class="claim-btn" onclick="confirmClaim()">✅ 確認核銷此獎項 (點數將立即凍結)</button>
+        <p id="claimWarning" class="warning-note" style="display:none; text-align:center;">⚠️ 核銷後，該學生將不可再次領獎，亦不可再累計攤位！</p>
         <button class="scan-again-btn" onclick="resetScanner()">📷 掃描下一位</button>
     </div>
 
@@ -82,6 +84,8 @@
 
     let html5QrCodeScanner = null;
     let scannedUserEmail = "";
+    let currentCalculatedPrize = "";
+    let currentPointsToFreeze = 0;
 
     function getParticipationScore(scoresObj) {
         let totalScans = 0;
@@ -121,6 +125,7 @@
         document.getElementById('scannerSection').style.display = 'none';
         document.getElementById('resultSection').style.display = 'block';
         document.getElementById('claimActionBtn').style.display = 'none';
+        document.getElementById('claimWarning').style.display = 'none';
         
         document.getElementById('resName').innerText = "連線查詢中...";
         document.getElementById('statusBox').className = "status-box";
@@ -135,32 +140,59 @@
                 
                 const points = getParticipationScore(user.scores || {});
                 document.getElementById('resScore').innerText = points;
+                currentPointsToFreeze = points;
 
                 const statusBox = document.getElementById('statusBox');
                 const title = document.getElementById('prizeTitle');
                 const desc = document.getElementById('statusDesc');
                 const claimBtn = document.getElementById('claimActionBtn');
+                const warning = document.getElementById('claimWarning');
 
                 if (user.prizeClaimed) {
+                    // ⛔ 已經換領過，徹底阻擋
                     statusBox.className = "status-box status-claimed";
-                    desc.innerText = "⛔ 注意：此學生已經換領過獎品";
+                    const prizeName = user.claimedPrize || "獎品";
+                    desc.innerHTML = `⛔ <strong>警告：此參與者已領取過獎品！</strong><br>已於較早前換領【${prizeName}】，資格已鎖定。`;
                     desc.style.color = "#d32f2f";
-                    title.innerText = "已換領";
+                    title.innerText = "❌ 嚴禁重複領取";
                     title.style.color = "#d32f2f";
+                    claimBtn.style.display = "none";
+                    warning.style.display = "none";
                 } else {
-                    // 🌟 核心同步修復：更新核銷時的獎勵判定門檻（5細、7中、9大） 🌟
+                    // 🌟 判定門檻：5 細、7 中、9 大
                     if (points >= 9) {
-                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 恭喜解鎖最高榮譽！可換領："; title.innerText = "🏆 大獎"; title.style.color = "#4caf50";
+                        currentCalculatedPrize = "🏆 大獎";
+                        statusBox.className = "status-box status-eligible"; 
+                        desc.innerText = "✨ 符合最高榮譽資格！可換領："; 
+                        title.innerText = "🏆 大獎 (完成 9 攤或以上)"; 
+                        title.style.color = "#2e7d32";
                         claimBtn.style.display = "block";
+                        warning.style.display = "block";
                     } else if (points >= 7) {
-                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 恭喜解鎖中級榮譽！可換領："; title.innerText = "🥈 中獎"; title.style.color = "#4caf50";
+                        currentCalculatedPrize = "🥈 中獎";
+                        statusBox.className = "status-box status-eligible"; 
+                        desc.innerText = "✨ 符合中級榮譽資格！可換領："; 
+                        title.innerText = "🥈 中獎 (完成 7-8 攤)"; 
+                        title.style.color = "#2e7d32";
                         claimBtn.style.display = "block";
+                        warning.style.display = "block";
                     } else if (points >= 5) {
-                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 恭喜解鎖初級榮譽！可換領："; title.innerText = "🥉 細獎"; title.style.color = "#4caf50";
+                        currentCalculatedPrize = "🥉 細獎";
+                        statusBox.className = "status-box status-eligible"; 
+                        desc.innerText = "✨ 符合初級榮譽資格！可換領："; 
+                        title.innerText = "🥉 細獎 (完成 5-6 攤)"; 
+                        title.style.color = "#2e7d32";
                         claimBtn.style.display = "block";
+                        warning.style.display = "block";
                     } else {
-                        statusBox.className = "status-box status-not-eligible"; desc.innerText = "尚未達到最低換獎門檻 (最少需完成 5 個攤位)"; desc.style.color = "#856404";
-                        title.innerText = "資格未符"; title.style.color = "#856404";
+                        currentCalculatedPrize = "";
+                        statusBox.className = "status-box status-not-eligible"; 
+                        desc.innerText = `尚未達到最低換獎門檻 (目前 ${points} 攤，最少需 5 攤)`; 
+                        desc.style.color = "#856404";
+                        title.innerText = "未符合領獎資格"; 
+                        title.style.color = "#856404";
+                        claimBtn.style.display = "none";
+                        warning.style.display = "none";
                     }
                 }
             } else {
@@ -170,25 +202,30 @@
     }
 
     function confirmClaim() {
-        if (!confirm("確定要核銷並將此學生標記為「已換領」嗎？")) return;
+        if (!currentCalculatedPrize) return;
+        const msg = `【核銷確認】\n\n確定為此參與者核銷發放【${currentCalculatedPrize}】嗎？\n\n⚠️ 核銷後：\n1. 該學生不可再次領取任何獎項\n2. 學生端的攤位數將永久凍結在 ${currentPointsToFreeze} 攤，不可再累計`;
+        if (!confirm(msg)) return;
         
         const claimBtn = document.getElementById('claimActionBtn');
-        claimBtn.disabled = true; claimBtn.innerText = "寫入雲端中...";
+        claimBtn.disabled = true; claimBtn.innerText = "寫入雲端鎖定中...";
 
+        // 🔒 寫入：prizeClaimed: true, 鎖定獎品名稱, 凍結攤位數
         db.collection("users").doc(scannedUserEmail).update({
-            prizeClaimed: true
+            prizeClaimed: true,
+            claimedPrize: currentCalculatedPrize,
+            freezeScore: currentPointsToFreeze
         }).then(() => {
-            alert("✅ 換領成功！資料已鎖定。");
+            alert(`✅ 核銷成功！已發放【${currentCalculatedPrize}】。\n該學生帳號已鎖定，無法再次換獎。`);
             document.getElementById('statusBox').className = "status-box status-claimed";
-            document.getElementById('statusDesc').innerText = "⛔ 此學生已經換領過獎品";
+            document.getElementById('statusDesc').innerText = `⛔ 此參與者已成功換領【${currentCalculatedPrize}】(資格已鎖定)`;
             document.getElementById('statusDesc').style.color = "#d32f2f";
-            document.getElementById('prizeTitle').innerText = "已換領";
+            document.getElementById('prizeTitle').innerText = "已完成核銷";
             document.getElementById('prizeTitle').style.color = "#d32f2f";
             claimBtn.style.display = "none";
-            claimBtn.disabled = false; claimBtn.innerText = "✅ 確認換領 (只限一次)";
+            document.getElementById('claimWarning').style.display = "none";
         }).catch(err => {
             alert("更新失敗：" + err.message);
-            claimBtn.disabled = false; claimBtn.innerText = "✅ 確認換領 (只限一次)";
+            claimBtn.disabled = false; claimBtn.innerText = "✅ 確認核銷此獎項";
         });
     }
 
