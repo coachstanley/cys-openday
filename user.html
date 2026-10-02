@@ -17,6 +17,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #e9ecef; padding: 12px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding-bottom: 100px; }
+        
         .info-panel { background-color: #fff; width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: hidden; border: 1px solid #ddd; }
         .info-header { background-color: #004080; color: white; padding: 14px 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-size: 15px; }
         .info-content { padding: 12px; display: none; background-color: #fafbfc; }
@@ -29,17 +30,20 @@
         
         /* 🎁 遊戲化集點獎品面板 */
         .prize-panel { background-color: #fff8e1; border: 2px solid #ffe082; width: 100%; max-width: 600px; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); text-align: center; }
+        .prize-panel.locked { background-color: #eef7ee; border-color: #81c784; }
         .prize-header { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: #b78103; border-bottom: 1px solid #ffd54f; padding-bottom: 8px; margin-bottom: 12px; }
+        .prize-panel.locked .prize-header { color: #2e7d32; border-color: #a5d6a7; }
         .prize-status-box { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
         .points-badge { background-color: #ff9800; color: white; border-radius: 20px; padding: 4px 10px; font-weight: bold; font-size: 14px; }
         .prize-tier { font-weight: bold; font-size: 18px; color: #e65100; text-shadow: 1px 1px 1px rgba(0,0,0,0.05); }
         .progress-bar-container { background-color: #e0e0e0; height: 10px; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
         .progress-bar { background: linear-gradient(90deg, #ffb300, #ff8f00); height: 100%; width: 0%; transition: width 0.8s ease-in-out; }
-        .prize-encouragement { font-size: 13px; line-height: 1.4; color: #5d4037; font-weight: bold; font-style: italic; background-color: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #ffa000; text-align: left; margin-bottom: 12px; }
+        .prize-encouragement { font-size: 13px; line-height: 1.5; color: #5d4037; font-weight: bold; font-style: italic; background-color: #fff; padding: 10px; border-radius: 6px; border-left: 4px solid #ffa000; text-align: left; margin-bottom: 12px; }
+        .prize-panel.locked .prize-encouragement { border-left-color: #2e7d32; color: #1b5e20; }
         
         /* 🎫 兌換按鈕樣式 */
         .btn-redeem { background-color: #e65100; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; box-shadow: 0 4px 6px rgba(230,81,0,0.3); transition: 0.3s; margin-top: 5px; }
-        .btn-redeem.claimed { background-color: #28a745 !important; box-shadow: none !important; cursor: not-allowed; }
+        .btn-redeem.claimed { background-color: #2e7d32 !important; box-shadow: none !important; cursor: not-allowed; }
 
         .certificate-container { background-color: #ffffff; width: 100%; max-width: 600px; padding: 5% 6%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; position: relative; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; }
         .cert-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #004080; padding-bottom: 12px; }
@@ -76,7 +80,7 @@
         #reader { width: 100%; max-width: 320px; margin: auto; border: 2px solid #ccc; border-radius: 8px; overflow: hidden; background: #000; }
         .btn-close-scan { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; min-height: 40px; width: 100%; }
 
-        /* A4 PDF 導出 CSS */
+        /* A4 PDF 導出 CSS (防裁切、高度自適應) */
         .exporting-a4 { width: 794px !important; height: auto !important; min-height: 1123px !important; max-width: none !important; padding: 40px 50px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -12px !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; background-color: white !important; margin: 0 !important; }
         .exporting-a4 .cert-header { padding-bottom: 15px !important; margin-bottom: 15px !important; border-bottom-width: 3px !important; }
         .exporting-a4 .cert-logo { max-width: 110px !important; max-height: 110px !important; margin-bottom: 10px !important;}
@@ -121,10 +125,10 @@
 </div>
 
 <!-- 🎁 獨立集點換獎進度面板 -->
-<div class="prize-panel" data-html2canvas-ignore="true">
-    <div class="prize-header">🎁 我的資訊日集點進度</div>
+<div class="prize-panel" id="prizePanelBox" data-html2canvas-ignore="true">
+    <div class="prize-header">🎁 我的資訊日換獎狀態</div>
     <div class="prize-status-box">
-        <div>目前挑戰進度：<span class="points-badge" id="displayPoints">0</span> 攤</div>
+        <div>集點攤位數：<span class="points-badge" id="displayPoints">0</span> 攤</div>
         <div class="prize-tier" id="displayPrize">❌ 努力挑戰中</div>
     </div>
     <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
@@ -137,7 +141,7 @@
 <div id="redeemModal" class="modal-overlay" data-html2canvas-ignore="true">
     <div class="modal-content">
         <h3>🎫 換獎專屬 QR Code</h3>
-        <p style="color: #666; font-size: 13px; margin-bottom: 15px;">請向禮物部職員出示此二維碼進行換領。<br><span style="color:#d32f2f; font-weight:bold;">注意：獎品只限換領一次，換領後系統將鎖定。</span></p>
+        <p style="color: #666; font-size: 13px; margin-bottom: 15px;">請向禮物部職員出示此二維碼。<br><span style="color:#d32f2f; font-weight:bold;">⚠️ 提醒：換領任何獎項後，系統將立即鎖定，不可再次領獎，亦不可再累積攤位換取更高獎項！</span></p>
         <canvas id="redeemCanvas" style="border: 1px solid #ddd; padding: 10px; border-radius: 10px; background: white; margin-bottom: 15px;"></canvas>
         <button class="btn-close-scan" onclick="document.getElementById('redeemModal').classList.remove('active')">關閉</button>
     </div>
@@ -167,8 +171,8 @@
 
     <div class="ai-comments" id="aiCommentsBox">
         <h4>✨ AI 智能綜合能力分析</h4>
-        <p><span class="highlight-positive">【優勢讚賞】</span> <span id="ai-positive">系統 analysis 中...</span></p>
-        <p><span class="highlight-suggest">【優化建議】</span> <span id="ai-suggest">系統 analysis 中...</span></p>
+        <p><span class="highlight-positive">【優勢讚賞】</span> <span id="ai-positive">系統分析中...</span></p>
+        <p><span class="highlight-suggest">【優化建議】</span> <span id="ai-suggest">系統分析中...</span></p>
     </div>
     
     <div class="footer-text" style="text-align: right; color: #555; font-size: 11px; margin-top: 18px; border-top: 1px solid #eef2f5; padding-top: 12px; font-weight: bold; line-height: 1.6;">
@@ -230,7 +234,7 @@
         });
     }
 
-    // 2. 核心修正：SCAN 2 個 QR 等於完成 1 個攤位
+    // 2 個掃描 = 1 個攤位
     function getParticipationScore(scoresObj) {
         let totalScans = 0;
         for (let i = 0; i < 5; i++) {
@@ -280,7 +284,7 @@
                 radarChart.data.datasets[0].data = avgScores;
                 radarChart.update();
 
-                updatePrizeSystem(rawScores, currentUser.prizeClaimed);
+                updatePrizeSystem(rawScores, currentUser);
                 generateAIComments(avgScores);
             }
         });
@@ -325,56 +329,76 @@
 
             radarChart.data.datasets[0].data = avgScores;
             radarChart.update();
-            updatePrizeSystem(rawScores, currentUser.prizeClaimed);
+            updatePrizeSystem(rawScores, currentUser);
             generateAIComments(avgScores);
         }
     });
 
-    // 🌟 1. 核心修復：進度門檻微調（5細、7中、9大）與挑戰、領取徹底分開 🌟
-    function updatePrizeSystem(scores, isClaimed) {
-        const points = getParticipationScore(scores); 
-        document.getElementById('displayPoints').innerText = points;
-
-        let challengeTier = "❌ 努力挑戰中";
-        let encouragementText = "";
+    // 🌟 核心規則：一旦換過任何獎，攤位數凍結，不可再累計攤位，亦不可再次領獎 🌟
+    function updatePrizeSystem(scores, userObj) {
+        const isClaimed = !!userObj.prizeClaimed;
         
-        // 進度條分母定為 9 攤（即達到大獎即為 100% 滿格）
-        let progressPercent = (points / 9) * 100;
-        if (progressPercent > 100) progressPercent = 100;
+        // 🔒 若已換領過獎，凍結在換領時記錄的攤位數（若無則取當前攤位數）
+        const points = isClaimed 
+            ? (typeof userObj.freezeScore === 'number' ? userObj.freezeScore : getParticipationScore(scores))
+            : getParticipationScore(scores);
 
-        if (points >= 9) {
-            challengeTier = "🏆 終極大獎挑戰者 (已達9攤)";
-            encouragementText = "神乎其技！你已成功攻克 9 個以上的特色活動！完美的 AI 探索大師！🌟";
-        } else if (points >= 7) {
-            challengeTier = "🥈 中級挑戰者 (已達7攤)";
-            encouragementText = "超棒的！距離解鎖最頂級的【大獎】只剩最後 " + (9 - points) + " 個活動了，一鼓作氣衝刺吧！🔥";
-        } else if (points >= 5) {
-            challengeTier = "🥉 初級挑戰者 (已達5攤)";
-            encouragementText = "做得好！已成功跨越基礎門檻！再體驗 " + (7 - points) + " 個學科特色活動，即可解鎖升級【中獎】！✨";
-        } else {
-            challengeTier = "❌ 努力挑戰中";
-            encouragementText = "歡迎！再體驗 " + (5 - points) + " 個特色活動，就能解鎖【細獎】並獲得換獎資格囉！🚀";
-        }
-
-        document.getElementById('displayPrize').innerText = challengeTier;
-        document.getElementById('progressBar').style.width = progressPercent + "%";
-
+        document.getElementById('displayPoints').innerText = points;
+        const panelBox = document.getElementById('prizePanelBox');
         const btnRedeem = document.getElementById('btnShowRedeem');
+        const encouragement = document.getElementById('displayEncouragement');
+        const tier = document.getElementById('displayPrize');
+        const progressBar = document.getElementById('progressBar');
+
         if (isClaimed) {
+            // 🛑 已換領過：鎖定狀態
+            panelBox.classList.add('locked');
+            const claimedPrizeName = userObj.claimedPrize || "獎品";
+            tier.innerText = `✅ 已領取：${claimedPrizeName}`;
+            tier.style.color = "#2e7d32";
+            
+            progressBar.style.width = "100%";
+            progressBar.style.background = "#2e7d32";
+
+            encouragement.innerHTML = `⚠️ <strong>獎品已成功領取 (${claimedPrizeName})</strong><br>依大會規則：每人只限領獎一次。現已<strong>鎖定換獎資格</strong>，攤位點數<strong>不再累計</strong>。<br>💡 你仍可繼續體驗其他學科活動來<strong>更新你的五角能力圖</strong>與匯出專屬 A4 證書！`;
+
+            btnRedeem.style.display = "block";
             btnRedeem.className = "btn-redeem claimed";
             btnRedeem.disabled = true;
-            btnRedeem.innerText = "✅ 獎品已於櫃檯成功換領 (系統鎖定)";
-            document.getElementById('progressBar').style.background = "#28a745";
-            document.getElementById('displayEncouragement').innerText = "感謝您的熱情參與！您已兌換了紀念獎品。您仍可繼續體驗其他學科活動，並下載您的專屬證書 PDF！🏫";
+            btnRedeem.innerText = `🔒 已換領 ${claimedPrizeName} (資格已鎖定)`;
         } else {
-            document.getElementById('progressBar').style.background = "linear-gradient(90deg, #ffb300, #ff8f00)";
-            document.getElementById('displayEncouragement').innerText = encouragementText;
+            // 🟢 未換領：正常挑戰中
+            panelBox.classList.remove('locked');
+            let challengeTier = "❌ 努力挑戰中";
+            let encouragementText = "";
+            let progressPercent = (points / 9) * 100;
+            if (progressPercent > 100) progressPercent = 100;
+
+            if (points >= 9) {
+                challengeTier = "🏆 終極大獎資格 (已達9攤)";
+                encouragementText = "🔥 太厲害了！已完成 9 個攤位！你現在可以前往禮物部換取【🏆 大獎】！請注意：換領後無法再領取其他獎項。";
+            } else if (points >= 7) {
+                challengeTier = "🥈 中獎資格 (已達7攤)";
+                encouragementText = "✨ 恭喜達到 7 攤，已可換領【🥈 中獎】！或者你可以再多挑戰 " + (9 - points) + " 個攤位爭取【🏆 大獎】（換領後不可再累計）。";
+            } else if (points >= 5) {
+                challengeTier = "🥉 細獎資格 (已達5攤)";
+                encouragementText = "👍 已達 5 攤，可換領【🥉 細獎】！如果你想拿更好的獎項，請繼續挑戰至 7 攤或 9 攤（一旦換領細獎即鎖定，不可再累計）。";
+            } else {
+                challengeTier = "❌ 努力挑戰中";
+                encouragementText = "歡迎！再完成 " + (5 - points) + " 個攤位（每攤需掃碼 2 次），即可解鎖首階段【細獎】！出發吧！🚀";
+            }
+
+            tier.innerText = challengeTier;
+            tier.style.color = points >= 5 ? "#e65100" : "#777";
+            progressBar.style.width = progressPercent + "%";
+            progressBar.style.background = "linear-gradient(90deg, #ffb300, #ff8f00)";
+            encouragement.innerText = encouragementText;
 
             if (points >= 5) {
+                btnRedeem.style.display = "block";
                 btnRedeem.className = "btn-redeem";
                 btnRedeem.disabled = false;
-                btnRedeem.style.display = "block";
-                btnRedeem.innerText = "🎫 出示換獎專屬 QR Code";
+                btnRedeem.innerText = "🎫 出示換獎專屬 QR Code (限換一次)";
             } else {
                 btnRedeem.style.display = "none";
             }
@@ -383,6 +407,10 @@
 
     function showRedeemQR() {
         if (!currentUser) return;
+        if (currentUser.prizeClaimed) {
+            alert("你已經領取過獎品，系統已鎖定，不可再次出示換領！");
+            return;
+        }
         const redeemData = JSON.stringify({ action: "redeem", email: currentUser.email });
         new QRious({ element: document.getElementById('redeemCanvas'), value: redeemData, size: 220, level: 'H' });
         document.getElementById('redeemModal').classList.add('active');
@@ -508,11 +536,17 @@
             if (!localRawScores[keyStr]) localRawScores[keyStr] = [];
             localRawScores[keyStr].push(newScore);
 
+            // 寫入雲端
             db.collection("users").doc(loginEmail.toLowerCase()).update({
                 scores: localRawScores, status: 'active'
             }).then(() => {
-                const currentBoothCount = getParticipationScore(localRawScores);
-                alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得一筆 ${newScore} 分評分，已更新蜘蛛圖！\n2. 【遊玩集點】目前累計體驗完成：${currentBoothCount} 個攤位。`);
+                if (currentUser.prizeClaimed) {
+                    // 🌟 若已換領過獎，明確提示已鎖定
+                    alert(`🎉 掃描成功！\n\n【能力評量】「${abilityName}」獲得一筆 ${newScore} 分評分，已更新蜘蛛圖！\n\n⚠️ 注意：你已領取過獎品，換獎攤位數已鎖定不可再累計，感謝繼續挑戰！`);
+                } else {
+                    const currentBoothCount = getParticipationScore(localRawScores);
+                    alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得一筆 ${newScore} 分評分，已更新蜘蛛圖！\n2. 【遊玩集點】目前累計體驗完成：${currentBoothCount} 個攤位。`);
+                }
             }).catch(() => { alert("雲端連線失敗，請稍後重試。"); });
         } catch (e) { alert(`⚠️ 二維碼解析失敗！`); }
     }
