@@ -718,7 +718,14 @@
 
         function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
-        new Chart(document.getElementById('schoolChart').getContext('2d'), { type: 'bar', data: { labels: ['元朗公立中學校友會小學', '光明學校', '鐘聲學校', '南元朗官立小學', '其他'], datasets: [{ label: '人數', data: [150, 120, 95, 80, 411], backgroundColor: 'rgba(54, 162, 235, 0.6)' }] }, options: { responsive: true, maintainAspectRatio: false } });
+        new Chart(document.getElementById('schoolChart').getContext('2d'), { 
+            type: 'bar', 
+            data: { 
+                labels: ['光明學校', '鐘聲學校', '元朗公立中學校友會小學', '南元朗官立小學', '其他'], 
+                datasets: [{ label: '人數', data: [150, 120, 95, 80, 411], backgroundColor: 'rgba(54, 162, 235, 0.6)' }] 
+            }, 
+            options: { responsive: true, maintainAspectRatio: false } 
+        });
 
         const qrContainer = document.getElementById('qr-container');
         abilities.forEach((ability, index) => {
