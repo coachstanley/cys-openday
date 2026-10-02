@@ -38,7 +38,7 @@
 <body>
 
     <div class="header">
-        <h1>🎁 換領專員掃描系統</h1>
+        <h1>🎁 換領專員核銷系統</h1>
         <button class="btn-logout" onclick="logout()">登出</button>
     </div>
 
@@ -142,25 +142,24 @@
                 const claimBtn = document.getElementById('claimActionBtn');
 
                 if (user.prizeClaimed) {
-                    // 已換領過
                     statusBox.className = "status-box status-claimed";
                     desc.innerText = "⛔ 注意：此學生已經換領過獎品";
                     desc.style.color = "#d32f2f";
                     title.innerText = "已換領";
                     title.style.color = "#d32f2f";
                 } else {
-                    // 尚未換領，判斷資格
-                    if (points >= 10) {
-                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 符合最高獎勵資格！可換領："; title.innerText = "🏆 大獎"; title.style.color = "#4caf50";
+                    // 🌟 核心同步修復：更新核銷時的獎勵判定門檻（5細、7中、9大） 🌟
+                    if (points >= 9) {
+                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 恭喜解鎖最高榮譽！可換領："; title.innerText = "🏆 大獎"; title.style.color = "#4caf50";
                         claimBtn.style.display = "block";
-                    } else if (points >= 8) {
-                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 符合獎勵資格！可換領："; title.innerText = "🥈 中獎"; title.style.color = "#4caf50";
+                    } else if (points >= 7) {
+                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 恭喜解鎖中級榮譽！可換領："; title.innerText = "🥈 中獎"; title.style.color = "#4caf50";
                         claimBtn.style.display = "block";
                     } else if (points >= 5) {
-                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 符合獎勵資格！可換領："; title.innerText = "🥉 細獎"; title.style.color = "#4caf50";
+                        statusBox.className = "status-box status-eligible"; desc.innerText = "✨ 恭喜解鎖初級榮譽！可換領："; title.innerText = "🥉 細獎"; title.style.color = "#4caf50";
                         claimBtn.style.display = "block";
                     } else {
-                        statusBox.className = "status-box status-not-eligible"; desc.innerText = "尚未達到換獎門檻 (最少需 5 攤)"; desc.style.color = "#856404";
+                        statusBox.className = "status-box status-not-eligible"; desc.innerText = "尚未達到最低換獎門檻 (最少需完成 5 個攤位)"; desc.style.color = "#856404";
                         title.innerText = "資格未符"; title.style.color = "#856404";
                     }
                 }
@@ -171,7 +170,7 @@
     }
 
     function confirmClaim() {
-        if (!confirm("確定要將此學生標記為「已換領」嗎？操作後將無法再次領獎。")) return;
+        if (!confirm("確定要核銷並將此學生標記為「已換領」嗎？")) return;
         
         const claimBtn = document.getElementById('claimActionBtn');
         claimBtn.disabled = true; claimBtn.innerText = "寫入雲端中...";
@@ -179,7 +178,7 @@
         db.collection("users").doc(scannedUserEmail).update({
             prizeClaimed: true
         }).then(() => {
-            alert("✅ 換領成功！資料已同步鎖定。");
+            alert("✅ 換領成功！資料已鎖定。");
             document.getElementById('statusBox').className = "status-box status-claimed";
             document.getElementById('statusDesc').innerText = "⛔ 此學生已經換領過獎品";
             document.getElementById('statusDesc').style.color = "#d32f2f";
