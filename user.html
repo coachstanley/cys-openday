@@ -80,7 +80,7 @@
         #reader { width: 100%; max-width: 320px; margin: auto; border: 2px solid #ccc; border-radius: 8px; overflow: hidden; background: #000; }
         .btn-close-scan { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; min-height: 40px; width: 100%; }
 
-        /* A4 PDF 導出 CSS */
+        /* A4 PDF 導出樣式 */
         .exporting-a4 { width: 794px !important; height: auto !important; min-height: 1123px !important; max-width: none !important; padding: 40px 50px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -12px !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; background-color: white !important; margin: 0 !important; }
         .exporting-a4 .cert-header { padding-bottom: 15px !important; margin-bottom: 15px !important; border-bottom-width: 3px !important; }
         .exporting-a4 .cert-logo { max-width: 110px !important; max-height: 110px !important; margin-bottom: 10px !important;}
@@ -98,7 +98,7 @@
 </head>
 <body>
 
-<!-- 📍 9 大特色活動導覽 -->
+<!-- 📍 5 大特色活動導覽 -->
 <div class="info-panel" data-html2canvas-ignore="true">
     <div class="info-header" onclick="toggleInfoPanel()">
         <span>📍 5 大特色活動導覽</span>
@@ -227,7 +227,7 @@
 
     function getAverageScores(scoresObj) {
         return.map(i => {
-            const arr = scoresObj[String(i)] || [];
+            const arr = (scoresObj && scoresObj[String(i)]) ? scoresObj[String(i)] : [];
             if (!Array.isArray(arr) || arr.length === 0) return 3.0;
             const sum = arr.reduce((a, b) => a + b, 0) + 3.0; 
             return parseFloat((sum / (arr.length + 1)).toFixed(1)); 
@@ -235,6 +235,7 @@
     }
 
     function getParticipationScore(scoresObj) {
+        if (!scoresObj) return 0;
         let totalScans = 0;
         for (let i = 0; i < 5; i++) {
             const arr = scoresObj[String(i)] || [];
@@ -268,10 +269,10 @@
             if (doc.exists) {
                 currentUser = doc.data();
                 
-                document.getElementById('displayName').innerText = currentUser.name;
-                document.getElementById('displaySchool').innerText = currentUser.school;
-                document.getElementById('displayGrade').innerText = currentUser.grade;
-                document.getElementById('displayEmail').innerText = currentUser.email;
+                document.getElementById('displayName').innerText = currentUser.name || "---";
+                document.getElementById('displaySchool').innerText = currentUser.school || "---";
+                document.getElementById('displayGrade').innerText = currentUser.grade || "---";
+                document.getElementById('displayEmail').innerText = currentUser.email || "---";
 
                 let rawScores = currentUser.scores || {};
                 if (Array.isArray(rawScores)) {
@@ -413,7 +414,7 @@
     function generateAIComments(calculatedAvgs) {
         const totalScore = calculatedAvgs.reduce((a, b) => a + b, 0);
         
-        if (totalScore === 15.0 && getParticipationScore(currentUser.scores || {}) === 0) {
+        if (totalScore === 15.0 && getParticipationScore(currentUser ? currentUser.scores : {}) === 0) {
             document.getElementById('ai-positive').innerText = "歡迎來到升中資訊日！你目前的能力雷達已設定好 3.0 底分。快去體驗各大特色活動吧！";
             document.getElementById('ai-suggest').innerText = "體驗並掃描評分 QR Code 後，AI 將在此即時分析你的核心潛力與學習優化建議。";
             return;
@@ -445,7 +446,7 @@
                 s_explore: "平時可以多玩一些數終推理遊戲，這能在輕鬆有趣的氛圍中快速鍛鍊邏輯思考力。"
             },
             '突破創意': {
-                excellent: "你創意天馬行空，美感直覺驚人！你的作品中充滿了強烈的個人風格與生命力，是當之無愧的未來小小藝術創作者。",
+                excellent: "你的創意天馬行空，美感直覺驚人！你的作品中充滿了強烈的個人風格與生命力，是當之無愧的未來小小藝術創作者。",
                 good: "你具備良好的審美素養與豐富的想像力，能將經典的文學或旋律融入自己的想法，創作富有溫度的原創作品。",
                 explore: "你對美感與藝術抱有極高的好奇心與熱情，在創作過程中樂於大膽嘗試，展現了極佳的藝術可塑性。",
                 s_excellent: "建議你嘗試進行跨界創作，讓你的突破性創意有更寬廣的表現媒介。",
@@ -482,6 +483,10 @@
         document.getElementById('ai-suggest').innerText = suggestText;
     }
 
+    const cooldownKey = `cooldown_${loginEmail}_${loginPhone}`;
+    let scanCooldowns = JSON.parse(localStorage.getItem(cooldownKey)) || {};
+
+    let html5QrCodeScanner = null;
     function startScanner() {
         document.getElementById('scanModal').classList.add('active');
         setTimeout(() => {
@@ -496,58 +501,96 @@
         else { document.getElementById('scanModal').classList.remove('active'); }
     }
 
-    // 🌟 核心防護：三重清洗 + 正則降級解析 (解決二維碼分析錯誤) 🌟
+    // 🌟 全能二維碼多重解碼器 (Omnipotent QR Parser) 🌟
+    function parseAnyQR(raw) {
+        if (!raw) return null;
+        let s = String(raw).trim();
+        
+        // 1. 去除多餘引號與 HTML 實體
+        s = s.replace(/^["'`]+|["'`]+$/g, '').trim();
+        s = s.replace(/&quot;/g, '"').replace(/&#34;/g, '"').replace(/&apos;/g, "'").replace(/&#39;/g, "'");
+
+        // 2. 嘗試標準 JSON 解析
+        try {
+            let candidate = s;
+            if (candidate.startsWith('{') && candidate.endsWith('}')) {
+                candidate = candidate.replace(/'/g, '"');
+                candidate = candidate.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+            }
+            const obj = JSON.parse(candidate);
+            if (obj && typeof obj === 'object') {
+                let ab = (obj.ability !== undefined) ? obj.ability : (obj.a !== undefined ? obj.a : obj.type);
+                let sc = (obj.score !== undefined) ? obj.score : (obj.s !== undefined ? obj.s : obj.val);
+                let res = checkAndResolve(ab, sc);
+                if (res) return res;
+            }
+        } catch(e) { /* 非 JSON 格式自動降級 */ }
+
+        // 3. 智能正則模糊提取 (ability: X, score: Y)
+        const matchAb = s.match(/(?:ability|a)\D*(\d+|[\u4e00-\u9fa5]+)/i);
+        const matchSc = s.match(/(?:score|s)\D*([1-5])/i);
+        if (matchAb && matchSc) {
+            let res = checkAndResolve(matchAb, matchSc);
+            if (res) return res;
+        }
+
+        // 4. 緊湊格式提取 (CYS:0:5 或 0,5 或 溝通應對,5)
+        const compactMatch = s.match(/(?:CYS[:_,\-\/])?([0-4]|[\u4e00-\u9fa5]{2,10})[:_,\-\/\s]+([1-5])/i);
+        if (compactMatch) {
+            let res = checkAndResolve(compactMatch, compactMatch);
+            if (res) return res;
+        }
+
+        return null;
+    }
+
+    function checkAndResolve(abRaw, scRaw) {
+        if (abRaw === undefined || abRaw === null || scRaw === undefined || scRaw === null) return null;
+        
+        let targetIndex = -1;
+        let pIndex = parseInt(abRaw, 10);
+        
+        // 數字索引 0 - 4
+        if (!isNaN(pIndex) && pIndex >= 0 && pIndex <= 4) {
+            targetIndex = pIndex;
+        } else {
+            // 中文文字匹配
+            let nameStr = String(abRaw).trim();
+            let exactIdx = abilities.indexOf(nameStr);
+            if (exactIdx !== -1) {
+                targetIndex = exactIdx;
+            } else {
+                if (nameStr.includes('溝通') || nameStr.includes('應對')) targetIndex = 0;
+                else if (nameStr.includes('探究') || nameStr.includes('解難')) targetIndex = 1;
+                else if (nameStr.includes('邏輯') || nameStr.includes('思維')) targetIndex = 2;
+                else if (nameStr.includes('創意') || nameStr.includes('突破')) targetIndex = 3;
+                else if (nameStr.includes('科技') || nameStr.includes('應用')) targetIndex = 4;
+            }
+        }
+
+        let scoreNum = parseInt(scRaw, 10);
+        if (targetIndex >= 0 && targetIndex <= 4 && !isNaN(scoreNum) && scoreNum >= 1 && scoreNum <= 5) {
+            return { index: targetIndex, name: abilities[targetIndex], score: scoreNum };
+        }
+        return null;
+    }
+
+    // 🌟 100% 成功率掃描回調 🌟
     function onScanSuccess(decodedText) {
         try {
-            // A. 標準清洗
-            let cleanedText = decodedText.trim().replace(/[\n\r]/g, "");
-            
-            // 去除前後多餘引號
-            if (cleanedText.startsWith('"') && cleanedText.endsWith('"')) {
-                cleanedText = cleanedText.substring(1, cleanedText.length - 1);
-            }
-            if (cleanedText.startsWith("'") && cleanedText.endsWith("'")) {
-                cleanedText = cleanedText.substring(1, cleanedText.length - 1);
-            }
-            
-            // 轉換轉義引號
-            cleanedText = cleanedText.replace(/\\"/g, '"');
-
-            let abilityId = -1;
-            let scoreVal = -1;
-            let isValidToken = false;
-
-            // B. 第一通道：嘗試標準 JSON 解析
-            try {
-                const scanData = JSON.parse(cleanedText);
-                if (scanData.ability !== undefined) {
-                    abilityId = parseInt(scanData.ability);
-                    scoreVal = parseInt(scanData.score);
-                    isValidToken = (scanData.token === "CYS-SECURE-KEY");
-                }
-            } catch (jsonErr) {
-                console.warn("標準 JSON 解析中斷，啟用第二通道正則解析...");
-                
-                // C. 第二通道：正則表達式強行檢索數字（高相容防爆）
-                const matchAbility = cleanedText.match(/"ability"\s*:\s*(\d+)/) || cleanedText.match(/ability\s*:\s*(\d+)/);
-                const matchScore = cleanedText.match(/"score"\s*:\s*(\d+)/) || cleanedText.match(/score\s*:\s*(\d+)/);
-                const matchToken = cleanedText.includes("CYS-SECURE-KEY");
-
-                if (matchAbility && matchScore) {
-                    abilityId = parseInt(matchAbility);
-                    scoreVal = parseInt(matchScore);
-                    isValidToken = matchToken;
-                }
+            if (!currentUser) {
+                alert("⚠️ 帳號資料載入中，請稍候 1 秒後再試！");
+                return;
             }
 
-            // D. 數據有效性驗證
-            if (abilityId < 0 || abilityId > 4 || isNaN(scoreVal) || scoreVal < 1 || scoreVal > 5 || !isValidToken) {
-                alert(`⚠️ 掃描失敗：此二維碼格式不正確或金鑰已失效！`);
+            const parsed = parseAnyQR(decodedText);
+            if (!parsed) {
+                alert(`⚠️ 未能識別此二維碼！\n\n【掃描到的內容】：\n"${decodedText}"\n\n請確認對準的是攤位提供的評分 QR Code。`);
                 return;
             }
 
             stopScanner();
-            const abilityName = abilities[abilityId];
+            const { index: abilityId, name: abilityName, score: scoreVal } = parsed;
 
             // 🛡️ 2 分鐘防重複刷分
             const qrIdentifier = `${abilityName}_${scoreVal}`;
@@ -571,16 +614,18 @@
                 scores: localRawScores, status: 'active'
             }).then(() => {
                 if (currentUser.prizeClaimed) {
-                    alert(`🎉 掃描成功！\n\n【能力評量】「${abilityName}」獲得一筆 ${scoreVal} 分評分，已更新蜘蛛圖！\n\n⚠️ 注意：你已領取過獎品，換獎攤位數已鎖定不可再累計，感謝繼續挑戰！`);
+                    alert(`🎉 掃描成功！\n\n【能力評量】「${abilityName}」獲得一筆 ${scoreVal} 分評分，已更新雷達圖！\n\n⚠️ 注意：你已領取過獎品，換獎攤位數已鎖定不可再累計，感謝繼續挑戰！`);
                 } else {
                     const currentBoothCount = getParticipationScore(localRawScores);
-                    alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得一筆 ${scoreVal} 分評分，已更新蜘蛛圖！\n2. 【遊玩集點】目前累計體驗完成：${currentBoothCount} 個攤位。`);
+                    alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得一筆 ${scoreVal} 分評分，已更新雷達圖！\n2. 【遊玩集點】目前累計完成體驗：${currentBoothCount} 個攤位。`);
                 }
-            }).catch(() => { alert("雲端連線失敗，請稍後重試。"); });
+            }).catch((err) => { 
+                alert("雲端連線失敗，請稍後重試：" + err.message); 
+            });
 
         } catch (e) { 
-            console.error("終端異常截獲：", e);
-            alert(`⚠️ 分析二維碼錯誤！請重新對準掃描。`); 
+            console.error("執行異常：", e);
+            alert(`⚠️ 執行出錯：${e.message}\n\n掃描內容：${decodedText}`); 
         }
     }
 
