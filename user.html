@@ -80,7 +80,7 @@
         #reader { width: 100%; max-width: 320px; margin: auto; border: 2px solid #ccc; border-radius: 8px; overflow: hidden; background: #000; }
         .btn-close-scan { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; min-height: 40px; width: 100%; }
 
-        /* A4 PDF 導出樣式 */
+        /* A4 PDF 導出 CSS */
         .exporting-a4 { width: 794px !important; height: auto !important; min-height: 1123px !important; max-width: none !important; padding: 40px 50px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -12px !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; background-color: white !important; margin: 0 !important; }
         .exporting-a4 .cert-header { padding-bottom: 15px !important; margin-bottom: 15px !important; border-bottom-width: 3px !important; }
         .exporting-a4 .cert-logo { max-width: 110px !important; max-height: 110px !important; margin-bottom: 10px !important;}
@@ -225,12 +225,13 @@
         }
     }
 
+    // 🌟 核心修正：修正了上一版的 return.map 嚴重語法錯誤，補回了 [0, 1, 2, 3, 4] 陣列 🌟
     function getAverageScores(scoresObj) {
-        return.map(i => {
+        return [0, 1, 2, 3, 4].map(i => {
             const arr = (scoresObj && scoresObj[String(i)]) ? scoresObj[String(i)] : [];
             if (!Array.isArray(arr) || arr.length === 0) return 3.0;
             const sum = arr.reduce((a, b) => a + b, 0) + 3.0; 
-            return parseFloat((sum / (arr.length + 1)).toFixed(1)); 
+            return parseFloat((sum / (arr.length + 1)).toFixed(1));
         });
     }
 
@@ -530,14 +531,14 @@
         const matchAb = s.match(/(?:ability|a)\D*(\d+|[\u4e00-\u9fa5]+)/i);
         const matchSc = s.match(/(?:score|s)\D*([1-5])/i);
         if (matchAb && matchSc) {
-            let res = checkAndResolve(matchAb, matchSc);
+            let res = checkAndResolve(matchAb[1], matchSc[1]);
             if (res) return res;
         }
 
         // 4. 緊湊格式提取 (CYS:0:5 或 0,5 或 溝通應對,5)
         const compactMatch = s.match(/(?:CYS[:_,\-\/])?([0-4]|[\u4e00-\u9fa5]{2,10})[:_,\-\/\s]+([1-5])/i);
         if (compactMatch) {
-            let res = checkAndResolve(compactMatch, compactMatch);
+            let res = checkAndResolve(compactMatch[1], compactMatch[2]);
             if (res) return res;
         }
 
