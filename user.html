@@ -370,18 +370,18 @@
             let progressPercent = (points / 9) * 100;
             if (progressPercent > 100) progressPercent = 100;
 
-            if (points >= 9) {
-                challengeTier = "🏆 終極大獎資格 (已達9攤)";
-                encouragementText = "🔥 太厲害了！已完成 9 個攤位！你現在可以前往禮物部換取【🏆 大獎】！請注意：換領後無法再領取其他獎項。";
-            } else if (points >= 7) {
-                challengeTier = "🥈 中獎資格 (已達7攤)";
-                encouragementText = "✨ 恭喜達到 7 攤，已可換領【🥈 中獎】！或者你可以再多挑戰 " + (9 - points) + " 個攤位爭取【🏆 大獎】（換領後不可再累計）。";
-            } else if (points >= 5) {
-                challengeTier = "🥉 細獎資格 (已達5攤)";
-                encouragementText = "👍 已達 5 攤，可換領【🥉 細獎】！如果你想拿更好的獎項，請繼續挑戰至 7 攤或 9 攤（一旦換領細獎即鎖定，不可再累計）。";
+            if (points >= 6) {
+                challengeTier = "🏆 終極大獎資格 (已達6攤)";
+                encouragementText = "🔥 太厲害了！已完成 6 個攤位！你現在可以前往禮物部換取【🏆 大獎】！請注意：換領後無法再領取其他獎項。";
+            } else if (points >= 4) {
+                challengeTier = "🥈 中獎資格 (已達4攤)";
+                encouragementText = "✨ 恭喜達到 4 攤，已可換領【🥈 中獎】！或者你可以再多挑戰 " + (6 - points) + " 個攤位爭取【🏆 大獎】（換領後不可再累計）。";
+            } else if (points >= 2) {
+                challengeTier = "🥉 細獎資格 (已達2攤)";
+                encouragementText = "👍 已達 2 攤，可換領【🥉 細獎】！如果你想拿更好的獎項，請繼續挑戰至 4 攤或 6 攤（一旦換領細獎即鎖定，不可再累計）。";
             } else {
                 challengeTier = "❌ 努力挑戰中";
-                encouragementText = "歡迎！再完成 " + (5 - points) + " 個攤位（每攤需掃碼 2 次），即可解鎖首階段【細獎】！出發吧！🚀";
+                encouragementText = "歡迎！再完成 " + (2 - points) + " 個攤位（每攤需掃碼 2 次），即可解鎖首階段【細獎】！出發吧！🚀";
             }
 
             tier.innerText = challengeTier;
