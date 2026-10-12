@@ -160,40 +160,40 @@
                     warning.style.display = "none";
                 } else {
                     // 🌟 判定門檻：5 細、7 中、9 大
-                    if (points >= 9) {
-                        currentCalculatedPrize = "🏆 大獎";
-                        statusBox.className = "status-box status-eligible"; 
-                        desc.innerText = "✨ 符合最高榮譽資格！可換領："; 
-                        title.innerText = "🏆 大獎 (完成 9 攤或以上)"; 
-                        title.style.color = "#2e7d32";
-                        claimBtn.style.display = "block";
-                        warning.style.display = "block";
-                    } else if (points >= 7) {
-                        currentCalculatedPrize = "🥈 中獎";
-                        statusBox.className = "status-box status-eligible"; 
-                        desc.innerText = "✨ 符合中級榮譽資格！可換領："; 
-                        title.innerText = "🥈 中獎 (完成 7-8 攤)"; 
-                        title.style.color = "#2e7d32";
-                        claimBtn.style.display = "block";
-                        warning.style.display = "block";
-                    } else if (points >= 5) {
-                        currentCalculatedPrize = "🥉 細獎";
-                        statusBox.className = "status-box status-eligible"; 
-                        desc.innerText = "✨ 符合初級榮譽資格！可換領："; 
-                        title.innerText = "🥉 細獎 (完成 5-6 攤)"; 
-                        title.style.color = "#2e7d32";
-                        claimBtn.style.display = "block";
-                        warning.style.display = "block";
-                    } else {
-                        currentCalculatedPrize = "";
-                        statusBox.className = "status-box status-not-eligible"; 
-                        desc.innerText = `尚未達到最低換獎門檻 (目前 ${points} 攤，最少需 5 攤)`; 
-                        desc.style.color = "#856404";
-                        title.innerText = "未符合領獎資格"; 
-                        title.style.color = "#856404";
-                        claimBtn.style.display = "none";
-                        warning.style.display = "none";
-                    }
+                if (points >= 6) {
+                    currentCalculatedPrize = "🏆 大獎";
+                    statusBox.className = "status-box status-eligible"; 
+                    desc.innerText = "✨ 符合最高榮譽資格！可換領："; 
+                    title.innerText = "🏆 大獎 (完成 6 攤或以上)"; 
+                    title.style.color = "#2e7d32";
+                    claimBtn.style.display = "block";
+                    warning.style.display = "block";
+                } else if (points >= 4) {
+                    currentCalculatedPrize = "🥈 中獎";
+                    statusBox.className = "status-box status-eligible"; 
+                    desc.innerText = "✨ 符合中級榮譽資格！可換領："; 
+                    title.innerText = "🥈 中獎 (完成 4-5 攤)"; 
+                    title.style.color = "#2e7d32";
+                    claimBtn.style.display = "block";
+                    warning.style.display = "block";
+                } else if (points >= 2) {
+                    currentCalculatedPrize = "🥉 細獎";
+                    statusBox.className = "status-box status-eligible"; 
+                    desc.innerText = "✨ 符合初級榮譽資格！可換領："; 
+                    title.innerText = "🥉 細獎 (完成 2-3 攤)"; 
+                    title.style.color = "#2e7d32";
+                    claimBtn.style.display = "block";
+                    warning.style.display = "block";
+                } else {
+                    currentCalculatedPrize = "";
+                    statusBox.className = "status-box status-not-eligible"; 
+                    desc.innerText = `尚未達到最低換獎門檻 (目前完成 ${points} 攤，最少需 2 攤)`; 
+                    desc.style.color = "#856404";
+                    title.innerText = "未符合領獎資格"; 
+                    title.style.color = "#856404";
+                    claimBtn.style.display = "none";
+                    warning.style.display = "none";
+                }
                 }
             } else {
                 alert("找不到此學生資料！"); resetScanner();
