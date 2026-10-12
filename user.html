@@ -43,7 +43,7 @@
         
         /* 🎫 兌換按鈕樣式 */
         .btn-redeem { background-color: #e65100; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; box-shadow: 0 4px 6px rgba(230,81,0,0.3); transition: 0.3s; margin-top: 5px; }
-        .btn-redeem.claimed { background-color: #2e7d32 !important; box-shadow: none !important; cursor: not-allowed; }
+        .btn-redeem:hover { background-color: #bf360c; }
 
         .certificate-container { background-color: #ffffff; width: 100%; max-width: 600px; padding: 5% 6%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; position: relative; border: 6px solid #f4f7f6; outline: 2px solid #004080; outline-offset: -8px; }
         .cert-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #004080; padding-bottom: 12px; }
@@ -80,7 +80,7 @@
         #reader { width: 100%; max-width: 320px; margin: auto; border: 2px solid #ccc; border-radius: 8px; overflow: hidden; background: #000; }
         .btn-close-scan { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; min-height: 40px; width: 100%; }
 
-        /* A4 PDF 導出 CSS */
+        /* A4 PDF 導出樣式 (防裁切、高度自適應) */
         .exporting-a4 { width: 794px !important; height: auto !important; min-height: 1123px !important; max-width: none !important; padding: 40px 50px !important; border-width: 10px !important; outline-width: 3px !important; outline-offset: -12px !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; background-color: white !important; margin: 0 !important; }
         .exporting-a4 .cert-header { padding-bottom: 15px !important; margin-bottom: 15px !important; border-bottom-width: 3px !important; }
         .exporting-a4 .cert-logo { max-width: 110px !important; max-height: 110px !important; margin-bottom: 10px !important;}
@@ -134,14 +134,15 @@
     <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
     <div class="prize-encouragement" id="displayEncouragement">歡迎參與！請開始掃描攤位 QR Code 來累積遊玩次數。</div>
     
-    <button class="btn-redeem" id="btnShowRedeem" onclick="showRedeemQR()">🎫 出示換獎專屬 QR Code</button>
+    <!-- 換獎按鈕 (預設隱藏，滿 2 攤才出現；領獎後徹底隱藏) -->
+    <button class="btn-redeem" id="btnShowRedeem" onclick="showRedeemQR()" style="display: none;">🎫 出示換獎專屬 QR Code</button>
 </div>
 
 <!-- 專屬換領 QR Code Modal -->
 <div id="redeemModal" class="modal-overlay" data-html2canvas-ignore="true">
     <div class="modal-content">
         <h3>🎫 換獎專屬 QR Code</h3>
-        <p style="color: #666; font-size: 13px; margin-bottom: 15px;">請向禮物部職員出示此二維碼。<br><span style="color:#d32f2f; font-weight:bold;">⚠️ 提醒：換領任何獎項後，系統將立即鎖定，不可再次領獎，亦不可再累積攤位換取更高獎項！</span></p>
+        <p style="color: #666; font-size: 13px; margin-bottom: 15px;">請向禮物部職員出示此二維碼進行核銷。<br><span style="color:#d32f2f; font-weight:bold;">⚠️ 提醒：換領任何獎項後，系統將鎖定為「已換領」，此換獎按鈕將不再顯示，亦不可再累積攤位換更高獎項！</span></p>
         <canvas id="redeemCanvas" style="border: 1px solid #ddd; padding: 10px; border-radius: 10px; background: white; margin-bottom: 15px;"></canvas>
         <button class="btn-close-scan" onclick="document.getElementById('redeemModal').classList.remove('active')">關閉</button>
     </div>
@@ -225,7 +226,7 @@
         }
     }
 
-    // 🌟 核心修正：修正了上一版的 return.map 嚴重語法錯誤，補回了 [0, 1, 2, 3, 4] 陣列 🌟
+    // 🌟 安全陣列平均分計算 (底分 3.0) 🌟
     function getAverageScores(scoresObj) {
         return [0, 1, 2, 3, 4].map(i => {
             const arr = (scoresObj && scoresObj[String(i)]) ? scoresObj[String(i)] : [];
@@ -235,6 +236,7 @@
         });
     }
 
+    // 2 掃描 = 1 攤位
     function getParticipationScore(scoresObj) {
         if (!scoresObj) return 0;
         let totalScans = 0;
@@ -335,6 +337,7 @@
         }
     });
 
+    // 🌟 最新規則：2攤細獎、4攤中獎、6攤大獎；換領後「獎品已領」且不顯示 QR 按鈕 🌟
     function updatePrizeSystem(scores, userObj) {
         const isClaimed = !!userObj.prizeClaimed;
         const points = isClaimed 
@@ -349,50 +352,53 @@
         const progressBar = document.getElementById('progressBar');
 
         if (isClaimed) {
+            // 🛑 1. 已換領過：狀態顯示「獎品已領」，徹底隱藏換獎 QR 按鈕
             panelBox.classList.add('locked');
-            const claimedPrizeName = userObj.claimedPrize || "獎品";
-            tier.innerText = `✅ 已領取：${claimedPrizeName}`;
+            const claimedPrizeName = userObj.claimedPrize || "紀念獎品";
+            tier.innerText = `✅ 獎品已領 (${claimedPrizeName})`;
             tier.style.color = "#2e7d32";
             
             progressBar.style.width = "100%";
             progressBar.style.background = "#2e7d32";
 
-            encouragement.innerHTML = `⚠️ <strong>獎品已成功領取 (${claimedPrizeName})</strong><br>依大會規則：每人只限領獎一次。現已<strong>鎖定換獎資格</strong>，攤位點數<strong>不再累計</strong>。<br>💡 你仍可繼續體驗其他學科活動來<strong>更新你的五角能力圖</strong>與匯出專屬 A4 證書！`;
+            encouragement.innerHTML = `✅ <strong>獎品已領 (${claimedPrizeName})</strong><br>依大會規則：每人只限換領獎品一次。攤位點數已鎖定。<br>💡 你仍可繼續體驗其他學科活動來<strong>更新你的五角能力圖</strong>與匯出專屬 A4 證書！`;
 
-            btnRedeem.style.display = "block";
-            btnRedeem.className = "btn-redeem claimed";
-            btnRedeem.disabled = true;
-            btnRedeem.innerText = `🔒 已換領 ${claimedPrizeName} (資格已鎖定)`;
+            // 🌟 核心要求：曾換領任何獎後，不顯示換領獎品的 QR 按鈕！
+            btnRedeem.style.display = "none";
+            document.getElementById('redeemModal').classList.remove('active');
         } else {
+            // 🟢 2. 未換領：依最新門檻 (2/4/6 攤) 動態更新
             panelBox.classList.remove('locked');
             let challengeTier = "❌ 努力挑戰中";
             let encouragementText = "";
-            let progressPercent = (points / 9) * 100;
+            
+            // 最新滿格為 6 攤
+            let progressPercent = (points / 6) * 100;
             if (progressPercent > 100) progressPercent = 100;
 
             if (points >= 6) {
                 challengeTier = "🏆 終極大獎資格 (已達6攤)";
-                encouragementText = "🔥 太厲害了！已完成 6 個攤位！你現在可以前往禮物部換取【🏆 大獎】！請注意：換領後無法再領取其他獎項。";
+                encouragementText = "🔥 太厲害了！已完成 6 個攤位，達成滿格！請點擊下方按鈕出示 QR Code 換取【🏆 大獎】！請注意：換領後將不可再領其他獎項。";
             } else if (points >= 4) {
                 challengeTier = "🥈 中獎資格 (已達4攤)";
-                encouragementText = "✨ 恭喜達到 4 攤，已可換領【🥈 中獎】！或者你可以再多挑戰 " + (6 - points) + " 個攤位爭取【🏆 大獎】（換領後不可再累計）。";
+                encouragementText = "✨ 恭喜達到 4 攤！你已可換領【🥈 中獎】，或再多挑戰 " + (6 - points) + " 個攤位爭取【🏆 大獎】（換領後不可再累計）。";
             } else if (points >= 2) {
                 challengeTier = "🥉 細獎資格 (已達2攤)";
-                encouragementText = "👍 已達 2 攤，可換領【🥉 細獎】！如果你想拿更好的獎項，請繼續挑戰至 4 攤或 6 攤（一旦換領細獎即鎖定，不可再累計）。";
+                encouragementText = "👍 已達 2 攤！已解鎖換獎功能，可換領【🥉 細獎】！亦可繼續挑戰至 4 攤或 6 攤（一旦換領細獎即鎖定）。";
             } else {
                 challengeTier = "❌ 努力挑戰中";
-                encouragementText = "歡迎！再完成 " + (2 - points) + " 個攤位（每攤需掃碼 2 次），即可解鎖首階段【細獎】！出發吧！🚀";
+                encouragementText = "歡迎參與！只要完成 " + (2 - points) + " 個攤位（每攤需掃碼 2 次），即可解鎖換獎功能並獲得首階段【細獎】！出發吧！🚀";
             }
 
             tier.innerText = challengeTier;
-            tier.style.color = points >= 5 ? "#e65100" : "#777";
+            tier.style.color = points >= 2 ? "#e65100" : "#777";
             progressBar.style.width = progressPercent + "%";
             progressBar.style.background = "linear-gradient(90deg, #ffb300, #ff8f00)";
             encouragement.innerText = encouragementText;
 
-            if (points >= 5) {
+            // 🌟 核心要求：滿 2 攤才 ENABLE/SHOW 換領按鈕，未達 2 攤則隱藏
+            if (points >= 2) {
                 btnRedeem.style.display = "block";
-                btnRedeem.className = "btn-redeem";
                 btnRedeem.disabled = false;
                 btnRedeem.innerText = "🎫 出示換獎專屬 QR Code (限換一次)";
             } else {
@@ -447,7 +453,7 @@
                 s_explore: "平時可以多玩一些數終推理遊戲，這能在輕鬆有趣的氛圍中快速鍛鍊邏輯思考力。"
             },
             '突破創意': {
-                excellent: "你的創意天馬行空，美感直覺驚人！你的作品中充滿了強烈的個人風格與生命力，是當之無愧的未來小小藝術創作者。",
+                excellent: "你創意天馬行空，美感直覺驚人！你的作品中充滿了強烈的個人風格與生命力，是當之無愧的未來小小藝術創作者。",
                 good: "你具備良好的審美素養與豐富的想像力，能將經典的文學或旋律融入自己的想法，創作富有溫度的原創作品。",
                 explore: "你對美感與藝術抱有極高的好奇心與熱情，在創作過程中樂於大膽嘗試，展現了極佳的藝術可塑性。",
                 s_excellent: "建議你嘗試進行跨界創作，讓你的突破性創意有更寬廣的表現媒介。",
@@ -502,16 +508,14 @@
         else { document.getElementById('scanModal').classList.remove('active'); }
     }
 
-    // 🌟 全能二維碼多重解碼器 (Omnipotent QR Parser) 🌟
+    // 🌟 全能二維碼解碼器 (Omnipotent QR Parser) 🌟
     function parseAnyQR(raw) {
         if (!raw) return null;
         let s = String(raw).trim();
         
-        // 1. 去除多餘引號與 HTML 實體
         s = s.replace(/^["'`]+|["'`]+$/g, '').trim();
         s = s.replace(/&quot;/g, '"').replace(/&#34;/g, '"').replace(/&apos;/g, "'").replace(/&#39;/g, "'");
 
-        // 2. 嘗試標準 JSON 解析
         try {
             let candidate = s;
             if (candidate.startsWith('{') && candidate.endsWith('}')) {
@@ -525,9 +529,8 @@
                 let res = checkAndResolve(ab, sc);
                 if (res) return res;
             }
-        } catch(e) { /* 非 JSON 格式自動降級 */ }
+        } catch(e) { }
 
-        // 3. 智能正則模糊提取 (ability: X, score: Y)
         const matchAb = s.match(/(?:ability|a)\D*(\d+|[\u4e00-\u9fa5]+)/i);
         const matchSc = s.match(/(?:score|s)\D*([1-5])/i);
         if (matchAb && matchSc) {
@@ -535,7 +538,6 @@
             if (res) return res;
         }
 
-        // 4. 緊湊格式提取 (CYS:0:5 或 0,5 或 溝通應對,5)
         const compactMatch = s.match(/(?:CYS[:_,\-\/])?([0-4]|[\u4e00-\u9fa5]{2,10})[:_,\-\/\s]+([1-5])/i);
         if (compactMatch) {
             let res = checkAndResolve(compactMatch[1], compactMatch[2]);
@@ -551,11 +553,9 @@
         let targetIndex = -1;
         let pIndex = parseInt(abRaw, 10);
         
-        // 數字索引 0 - 4
         if (!isNaN(pIndex) && pIndex >= 0 && pIndex <= 4) {
             targetIndex = pIndex;
         } else {
-            // 中文文字匹配
             let nameStr = String(abRaw).trim();
             let exactIdx = abilities.indexOf(nameStr);
             if (exactIdx !== -1) {
@@ -576,7 +576,6 @@
         return null;
     }
 
-    // 🌟 100% 成功率掃描回調 🌟
     function onScanSuccess(decodedText) {
         try {
             if (!currentUser) {
@@ -615,7 +614,7 @@
                 scores: localRawScores, status: 'active'
             }).then(() => {
                 if (currentUser.prizeClaimed) {
-                    alert(`🎉 掃描成功！\n\n【能力評量】「${abilityName}」獲得一筆 ${scoreVal} 分評分，已更新雷達圖！\n\n⚠️ 注意：你已領取過獎品，換獎攤位數已鎖定不可再累計，感謝繼續挑戰！`);
+                    alert(`🎉 掃描成功！\n\n【能力評量】「${abilityName}」獲得一筆 ${scoreVal} 分評分，已更新雷達圖！\n\n⚠️ 注意：獎品已領，換獎資格已鎖定不可再累計，感謝繼續挑戰體驗！`);
                 } else {
                     const currentBoothCount = getParticipationScore(localRawScores);
                     alert(`🎉 掃描成功！\n\n1. 【能力評量】「${abilityName}」獲得一筆 ${scoreVal} 分評分，已更新雷達圖！\n2. 【遊玩集點】目前累計完成體驗：${currentBoothCount} 個攤位。`);
