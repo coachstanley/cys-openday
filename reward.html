@@ -4,18 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>職員專用 - 獎品換領系統</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'PingFang HK', 'Helvetica Neue', Arial, sans-serif; background-color: #f8f9fa; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
         .header { background-color: #e65100; color: white; width: 100%; max-width: 500px; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
         .header h1 { margin: 0; font-size: 18px; }
         .btn-logout { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
         
         .scanner-container { width: 100%; max-width: 500px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center; margin-bottom: 20px; }
-        #reader { width: 100%; max-width: 350px; margin: 0 auto 15px auto; border-radius: 10px; overflow: hidden; border: 2px solid #ddd; }
+        #reader { width: 100%; max-width: 350px; margin: 0 auto 15px auto; border-radius: 10px; overflow: hidden; border: 2px solid #ddd; background: #000; }
         
         .result-panel { width: 100%; max-width: 500px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: none; }
         .result-panel h3 { margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -43,17 +46,19 @@
         <button class="btn-logout" onclick="logout()">登出</button>
     </div>
 
+    <!-- 📷 掃描區域 -->
     <div class="scanner-container" id="scannerSection">
         <p style="margin-bottom: 15px; font-size: 14px; color: #666; font-weight: bold;">請對準學生手機上的「換獎專屬 QR Code」</p>
         <div id="reader"></div>
     </div>
 
+    <!-- 🔍 核銷資格顯示區域 -->
     <div class="result-panel" id="resultSection">
         <h3>🔍 學生資格檢驗</h3>
         <div class="student-info">
             <p>姓名：<strong id="resName">---</strong></p>
             <p>學校：<strong id="resSchool">---</strong></p>
-            <p>目前累積攤位數：<strong id="resScore" style="color: #007bff; font-size: 18px;">0</strong> 攤</p>
+            <p>目前累積體驗：<strong id="resScore" style="color: #007bff; font-size: 18px;">0</strong> 攤</p>
         </div>
         
         <div id="statusBox" class="status-box">
@@ -63,6 +68,8 @@
 
         <button id="claimActionBtn" class="claim-btn" onclick="confirmClaim()">✅ 確認核銷此獎項 (點數將立即凍結)</button>
         <p id="claimWarning" class="warning-note" style="display:none; text-align:center;">⚠️ 核銷後，該學生將不可再次領獎，亦不可再累計攤位！</p>
+        
+        <!-- 掃描下一位按鈕 -->
         <button class="scan-again-btn" onclick="resetScanner()">📷 掃描下一位</button>
     </div>
 
@@ -82,12 +89,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let html5QrCodeScanner = null;
+    let html5QrCode = null;
     let scannedUserEmail = "";
     let currentCalculatedPrize = "";
     let currentPointsToFreeze = 0;
 
     function getParticipationScore(scoresObj) {
+        if (!scoresObj) return 0;
         let totalScans = 0;
         for (let i = 0; i < 5; i++) {
             const arr = scoresObj[String(i)] || [];
@@ -96,21 +104,38 @@
         return Math.floor(totalScans / 2);
     }
 
+    // 🌟 初始化與開機相機 🌟
     function initScanner() {
         document.getElementById('scannerSection').style.display = 'block';
         document.getElementById('resultSection').style.display = 'none';
-        html5QrCodeScanner = new Html5Qrcode("reader");
-        html5QrCodeScanner.start(
-            { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, (e)=>{}
-        ).catch(err => { alert("相機開啟失敗，請允許相機權限！"); });
+        
+        // 每次重新啟動前，重新實例化確保不被鎖死
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("reader");
+        }
+        
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: { width: 250, height: 250 } }, 
+            onScanSuccess, 
+            (errorMessage) => { /* 忽略頻繁錯誤日誌 */ }
+        ).catch(err => { 
+            console.error("相機啟動錯誤：", err);
+            alert("相機開啟失敗，請確認是否已授予本網址相機鏡頭權限！"); 
+        });
     }
 
+    // 🌟 掃描成功解碼 🌟
     function onScanSuccess(decodedText) {
         try {
             const data = JSON.parse(decodedText);
             if (data.action === "redeem" && data.email) {
-                html5QrCodeScanner.stop().then(() => {
+                // 掃描成功立即停止相機錄影
+                html5QrCode.stop().then(() => {
                     checkUserEligibility(data.email);
+                }).catch(err => {
+                    console.error("停止相機失敗：", err);
+                    checkUserEligibility(data.email); // 降級直接進入查詢
                 });
             } else {
                 alert("⚠️ 這不是有效的換獎專屬 QR Code！");
@@ -120,6 +145,7 @@
         }
     }
 
+    // 🌟 比對雲端資格 (2細、4中、6大) 🌟
     function checkUserEligibility(email) {
         scannedUserEmail = email;
         document.getElementById('scannerSection').style.display = 'none';
@@ -149,7 +175,6 @@
                 const warning = document.getElementById('claimWarning');
 
                 if (user.prizeClaimed) {
-                    // ⛔ 已經換領過，徹底阻擋
                     statusBox.className = "status-box status-claimed";
                     const prizeName = user.claimedPrize || "獎品";
                     desc.innerHTML = `⛔ <strong>警告：此參與者已領取過獎品！</strong><br>已於較早前換領【${prizeName}】，資格已鎖定。`;
@@ -159,48 +184,53 @@
                     claimBtn.style.display = "none";
                     warning.style.display = "none";
                 } else {
-                    // 🌟 判定門檻：5 細、7 中、9 大
-                if (points >= 6) {
-                    currentCalculatedPrize = "🏆 大獎";
-                    statusBox.className = "status-box status-eligible"; 
-                    desc.innerText = "✨ 符合最高榮譽資格！可換領："; 
-                    title.innerText = "🏆 大獎 (完成 6 攤或以上)"; 
-                    title.style.color = "#2e7d32";
-                    claimBtn.style.display = "block";
-                    warning.style.display = "block";
-                } else if (points >= 4) {
-                    currentCalculatedPrize = "🥈 中獎";
-                    statusBox.className = "status-box status-eligible"; 
-                    desc.innerText = "✨ 符合中級榮譽資格！可換領："; 
-                    title.innerText = "🥈 中獎 (完成 4-5 攤)"; 
-                    title.style.color = "#2e7d32";
-                    claimBtn.style.display = "block";
-                    warning.style.display = "block";
-                } else if (points >= 2) {
-                    currentCalculatedPrize = "🥉 細獎";
-                    statusBox.className = "status-box status-eligible"; 
-                    desc.innerText = "✨ 符合初級榮譽資格！可換領："; 
-                    title.innerText = "🥉 細獎 (完成 2-3 攤)"; 
-                    title.style.color = "#2e7d32";
-                    claimBtn.style.display = "block";
-                    warning.style.display = "block";
-                } else {
-                    currentCalculatedPrize = "";
-                    statusBox.className = "status-box status-not-eligible"; 
-                    desc.innerText = `尚未達到最低換獎門檻 (目前完成 ${points} 攤，最少需 2 攤)`; 
-                    desc.style.color = "#856404";
-                    title.innerText = "未符合領獎資格"; 
-                    title.style.color = "#856404";
-                    claimBtn.style.display = "none";
-                    warning.style.display = "none";
-                }
+                    // 最新現場門檻：2細、4中、6大
+                    if (points >= 6) {
+                        currentCalculatedPrize = "🏆 大獎";
+                        statusBox.className = "status-box status-eligible"; 
+                        desc.innerText = "✨ 恭喜完成 6 攤以上！可換領："; 
+                        title.innerText = "🏆 大獎"; 
+                        title.style.color = "#2e7d32";
+                        claimBtn.style.display = "block";
+                        warning.style.display = "block";
+                    } else if (points >= 4) {
+                        currentCalculatedPrize = "🥈 中獎";
+                        statusBox.className = "status-box status-eligible"; 
+                        desc.innerText = "✨ 恭喜完成 4 攤！可換領："; 
+                        title.innerText = "🥈 中獎"; 
+                        title.style.color = "#2e7d32";
+                        claimBtn.style.display = "block";
+                        warning.style.display = "block";
+                    } else if (points >= 2) {
+                        currentCalculatedPrize = "🥉 細獎";
+                        statusBox.className = "status-box status-eligible"; 
+                        desc.innerText = "✨ 恭喜完成 2 攤！可換領："; 
+                        title.innerText = "🥉 細獎"; 
+                        title.style.color = "#2e7d32";
+                        claimBtn.style.display = "block";
+                        warning.style.display = "block";
+                    } else {
+                        currentCalculatedPrize = "";
+                        statusBox.className = "status-box status-not-eligible"; 
+                        desc.innerText = `尚未達到最低換獎門檻 (目前 ${points} 攤，最少需 2 攤)`; 
+                        desc.style.color = "#856404";
+                        title.innerText = "未符合領獎資格"; 
+                        title.style.color = "#856404";
+                        claimBtn.style.display = "none";
+                        warning.style.display = "none";
+                    }
                 }
             } else {
-                alert("找不到此學生資料！"); resetScanner();
+                alert("找不到此學生資料！"); 
+                resetScanner();
             }
-        }).catch(err => { alert("連線失敗：" + err.message); resetScanner(); });
+        }).catch(err => { 
+            alert("連線失敗：" + err.message); 
+            resetScanner(); 
+        });
     }
 
+    // 🌟 確認換領與鎖定 🌟
     function confirmClaim() {
         if (!currentCalculatedPrize) return;
         const msg = `【核銷確認】\n\n確定為此參與者核銷發放【${currentCalculatedPrize}】嗎？\n\n⚠️ 核銷後：\n1. 該學生不可再次領取任何獎項\n2. 學生端的攤位數將永久凍結在 ${currentPointsToFreeze} 攤，不可再累計`;
@@ -209,7 +239,6 @@
         const claimBtn = document.getElementById('claimActionBtn');
         claimBtn.disabled = true; claimBtn.innerText = "寫入雲端鎖定中...";
 
-        // 🔒 寫入：prizeClaimed: true, 鎖定獎品名稱, 凍結攤位數
         db.collection("users").doc(scannedUserEmail).update({
             prizeClaimed: true,
             claimedPrize: currentCalculatedPrize,
@@ -229,12 +258,45 @@
         });
     }
 
+    // 🌟 核心修復：重置並重新啟動相機掃描 🌟
     function resetScanner() {
-        if(html5QrCodeScanner) { html5QrCodeScanner.stop().catch(e=>{}); }
-        setTimeout(initScanner, 300);
+        scannedUserEmail = "";
+        currentCalculatedPrize = "";
+        currentPointsToFreeze = 0;
+        
+        document.getElementById('resName').innerText = "---";
+        document.getElementById('resSchool').innerText = "---";
+        document.getElementById('resScore').innerText = "0";
+        document.getElementById('statusBox').className = "status-box";
+        document.getElementById('statusDesc').innerText = "";
+        document.getElementById('prizeTitle').innerText = "";
+        document.getElementById('claimActionBtn').style.display = 'none';
+        document.getElementById('claimWarning').style.display = 'none';
+
+        // 徹底停止並銷毀當前相機執行緒，延時 300 毫秒重建，100% 避開衝突
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                setTimeout(initScanner, 300);
+            }).catch(e => {
+                // 如果相機原本就已經是 stopped 狀態，直接調用 init
+                setTimeout(initScanner, 300);
+            });
+        } else {
+            setTimeout(initScanner, 300);
+        }
     }
 
-    function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
+    function logout() { 
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                sessionStorage.clear(); window.location.href = 'index.html';
+            }).catch(e => {
+                sessionStorage.clear(); window.location.href = 'index.html';
+            });
+        } else {
+            sessionStorage.clear(); window.location.href = 'index.html';
+        }
+    }
 
     window.onload = initScanner;
 </script>
